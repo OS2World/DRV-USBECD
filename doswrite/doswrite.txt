@@ -1,0 +1,26 @@
+-------------------------------------------------------------------------------
+doswrite.exe - Obtain Device Descriptor from the associated device
+-------------------------------------------------------------------------------
+
+This sample application demonstrates how the OS/2 Control Program functions
+DosOpen, DosWrite and DosClose may be used to obtain the device descriptor
+from the associated usb device. Uses the default device driver name.
+
+Without the device attached it produced the following output:
+
+DosOpen ulrc=0 ulAction=1
+Setup Packet: 80 06 00 01 00 00 12 00
+DosWrite ulrc=31 cbTransfer=0
+Setup Packet: 80 06 00 01 00 00 12 00
+Data Packet: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+DosClose ulrc=0
+
+With the Sonix USB PC Camera it produced the following output:
+
+DosOpen ulrc=0 ulAction=1
+Setup Packet: 80 06 00 01 00 00 12 00
+DosWrite ulrc=0 cbTransfer=32
+Setup Packet: 80 06 00 01 00 00 12 00
+Data Packet: 12 01 10 01 00 00 00 40 45 0C 2D 60 01 01 00 01 00 01
+DosClose ulrc=0
+

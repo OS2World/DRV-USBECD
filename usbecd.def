@@ -1,0 +1,5 @@
+library USBECD
+description '@#W.M.Brul:20.20130911#@USB 2.0 Extended Control Driver'
+protmode
+segments '_DATA' class 'DATA'
+segments '_TEXT' class 'CODE'

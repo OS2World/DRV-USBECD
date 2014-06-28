@@ -1,0 +1,165 @@
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD20S.ZIP ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ Provides a device driver to directly control classless usb devices attached
+ to an OS/2 system. Has been specifically designed to ease the development and
+ test of simple homemade usb devices under OS/2. Uses standard/vendor control
+ transfers and data (bulk/interrupt) transfers. The hybrid control interface
+ supports isochronous transfers with 1 endpoint. Made in Holland by Wim Brul.
+
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+ ³ Contains the source code of the USB 2.0 Extended Control Driver for OS/2. ³
+ ³ Contains 2 sample applications written in C and 3 sample REXX procedures. ³
+|³ Contains 3 test applications written in Borland Turbo Assembler for OS/2. ³
+ ³ Contains 2 documentation files: usbecd.doc (this file) and usbecd.txt.    ³
+ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ May be freely used and exchanged. May be modified to suit your own individual
+ needs and purposes. You may use this product solely at your own risk. I cannot
+ be held responsible for any damages occurring due to your using this product.
+ You may not lease, rent or sell this product to any other party. Have fun.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                      ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Source Code Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbecd.doc ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                      ÀÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ The USB 2.0 Extended Control Driver for OS/2 is a 16 bit OS/2 device driver.
+ It has been written in turbo assembler ideal mode using the small memory model
+ and it has been compiled with Borland Turbo Assembler for OS/2 version 4.1 and
+ has been linked with Microsoft Segmented-Executable Linker version 5.10.005.
+
+ It consists of the following files:
+
+  usbecd.asm - source code
+  usbecd.def - definition file
+  usbecd.lst - listing file
+  usbecd.mak - make file
+  usbecd.map - map file
+  usbecd.obj - object code
+  usbecd.sys - device driver
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                    ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Device Driver Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbecd.txt ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                    ÀÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ Contains the - USB 2.0 Extended Control Driver for OS/2 - User Manual.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                          ÚÄÄÄÄÄÄÄÄÄ¿
+³ 1st Sample Application ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ dosread ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                          ÀÄÄÄÄÄÄÄÄÄÙ
+
+ This sample application demonstrates how the OS/2 Control Program functions
+ DosOpen, DosRead and DosClose may be used to obtain the device descriptor
+ from the last attached usb device. It consists of the following files:
+
+  dosread.c - source code
+  dosread.cmd - sample invokation
+  dosread.def - definition file
+  dosread.exe - executable
+  dosread.mak - make file
+  dosread.map - map file
+  dosread.obj - object code
+  dosread.txt - documentation
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                         ÚÄÄÄÄÄÄÄÄÄÄ¿
+³ 2nd Sample Application ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ doswrite ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                         ÀÄÄÄÄÄÄÄÄÄÄÙ
+
+ This sample application demonstrates how the OS/2 Control Program functions
+ DosOpen, DosWrite and DosClose may be used to obtain the device descriptor
+ from the associated usb device. It consists of the following files:
+
+  doswrite.c - source code
+  doswrite.cmd - sample invokation
+  doswrite.def - definition file
+  doswrite.exe - executable
+  doswrite.mak - make file
+  doswrite.map - map file
+  doswrite.obj - object code
+  doswrite.txt - documentation
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                        ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ 1st Sample Procedure ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbread.cmd ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                        ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ This sample procedure demonstrates how the OS/2 Procedure Language 2/REXX
+ stream functions may be used to obtain the device descriptor from the last
+ attached usb device. For more information refer to the usbecd.txt file.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                        ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ 2nd Sample Procedure ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbtest.cmd ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                        ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ This sample procedure demonstrates how the OS/2 Procedure Language 2/REXX
+ stream functions may be used to obtain the device descriptor, configuration
+ descriptors and corresponding interface and endpoint descriptors from the
+ associated usb device. It shows how to get and set the device configuration
+ and how to obtain the device, interface and endpoint status.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                       ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ 3rd Sample Procedure ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbwrite.cmd ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                       ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ This sample procedure demonstrates how the OS/2 Procedure Language 2/REXX
+ stream functions may be used to obtain the device descriptor, configuration
+ descriptors and corresponding interface and endpoint descriptors from the
+ associated usb device. For more information refer to the usbecd.txt file.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                             ÚÄÄÄÄÄÄÄÄ¿
+³ 1st Test Application ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ hybrid ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                             ÀÄÄÄÄÄÄÄÄÙ
+
+ This test application demonstrates how the OS/2 Control Program functions
+ DosOpen, DosWrite, DosDevIOCtl and DosClose should be used to exercise the
+ Isochronous Open and Close Requests. It may be interrupted by hitting the
+ Ctrl+Break or Ctrl+C keys. It consistes of the following files:
+
+  hybrid.asm - source code
+  hybrid.cmd - sample invokation
+  hybrid.def - definition file
+  hybrid.exe - executable
+  hybrid.lst - listing file
+  hybrid.mak - make file
+  hybrid.map - map file
+  hybrid.obj - object code
+  hybrid.txt - documentation
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                             ÚÄÄÄÄÄÄÄÄ¿
+³ 2nd Test Application ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ stream ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                             ÀÄÄÄÄÄÄÄÄÙ
+
+ This test application demonstrates how the OS/2 Control Program functions
+ DosOpen, DosWrite, DosDevIOCtl and DosClose should be used to properly obtain
+ isochronous stream data using isochronous transfers. It may be interrupted by
+ hitting the Ctrl+Break or Ctrl+C keys. It consists of the following files:
+
+  stream.asm - source code
+  stream.cmd - sample invokation
+  stream.def - definition file
+  stream.exe - executable
+  stream.lst - listing file
+  stream.mak - make file
+  stream.map - map file
+  stream.obj - object code
+  stream.txt - documentation
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                              ÚÄÄÄÄÄÄÄ¿
+³ 3rd Test Application ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ video ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                                              ÀÄÄÄÄÄÄÄÙ
+
+ This test application demonstrates how the OS/2 Control Program functions
+ DosOpen, DosWrite, DosDevIOCtl and DosClose should be used to properly obtain
+ isochronous video data using isochronous transfers. It may be interrupted by
+ hitting the Ctrl+Break or Ctrl+C keys. It consists of the following files:
+
+  video.asm - source code
+  video.cmd - sample invokation
+  video.def - definition file
+  video.exe - executable
+  video.lst - listing file
+  video.mak - make file
+  video.map - map file
+  video.obj - object code
+  video.txt - documentation
+

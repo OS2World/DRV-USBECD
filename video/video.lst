@@ -1,0 +1,1221 @@
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 1
+video.asm
+
+
+
+      1					 .486p
+      2	00000000			 model flat
+      3					 ideal
+      4
+      5					 extrn DosClose:near
+      6					 extrn DosCloseEventSem:near
+      7					 extrn DosCreateEventSem:near
+      8					 extrn DosDevIOCtl:near
+      9					 extrn DosExit:near
+     10					 extrn DosExitList:near
+     11					 extrn DosOpen:near
+     12					 extrn DosResetEventSem:near
+     13					 extrn DosSetPriority:near
+     14					 extrn DosSleep:near
+     15					 extrn DosWaitEventSem:near
+     16					 extrn DosWrite:near
+     17
+     18	00000000			 stack 8192
+     19
+     20	00002000			 dataseg ; must	be first
+     21					 ; define isochronous buffers
+     22		  =00010000		 aSize=65536 ; maximum value
+     23		  =FFFF			 mSize=65535 ; maximum value
+     24	00000000  010000*(00)		 IsoData db aSize dup(0)
+     25		  =0003			 iUsed=3 ; number of buffers
+     26		  =5555			 iSize=mSize/iUsed ; buffer size
+     27		  =FFFF			 tSize=iSize*iUsed ; total size
+     28		  =0000			 fUsed=0 ; number of frames
+     29
+     30	00010000			 dataseg
+     31	00010000  5C 44	45 56 5C	 szDevice db '\DEV\'
+     32	00010005  24 00	00 00 00 00 00+	 szDriver db '$',0,0,0,0,0,0,0,0
+     33		  00 00
+     34	0001000E  76 69	64 65 6F 2E 72+	 szOutput db 'video.raw',0
+     35		  61 77	00
+     36
+     37	00010018			 dataseg
+     38	00010018  73 74	61 72 74 65 64+	 sGood0	db 'started.',13,10
+     39		  2E 0D	0A
+     40	00010022  73 74	6F 70 70 65 64+	 sGood1	db 'stopped.',13,10
+     41		  2E 0D	0A
+     42	0001002C  77 61	69 74 69 6E 67+	 sGood2	db 'waiting...',13,10
+     43		  2E 2E	2E 0D 0A
+     44	00010038  61 77	61 69 74 69 6E+	 sGood3	db 'awaiting...',13,10
+     45		  67 2E	2E 2E 0D 0A
+     46	00010045  71 75	69 74 74 69 6E+	 sGood4	db 'quitting...',13,10
+     47		  67 2E	2E 2E 0D 0A
+     48	00010052			 label sGood5 byte
+     49
+     50	00010052			 dataseg
+     51	00010052  20 6F	70 65 6E 69 6E+	 sInfo0	db ' opening usbecd.sys',13,10
+     52		  67 20	75 73 62 65 63+
+     53		  64 2E	73 79 73 0D 0A
+     54	00010067  20 73	65 74 74 69 6E+	 sInfo1	db ' setting configuration',13,10
+     55		  67 20	63 6F 6E 66 69+
+     56		  67 75	72 61 74 69 6F+
+     57		  6E 0D	0A
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 2
+video.asm
+
+
+
+     58	0001007F  20 73	65 74 74 69 6E+	 sInfo2	db ' setting alternate interface',13,10
+     59		  67 20	61 6C 74 65 72+
+     60		  6E 61	74 65 20 69 6E+
+     61		  74 65	72 66 61 63 65+
+     62		  0D 0A
+     63	0001009D  20 63	72 65 61 74 69+	 sInfo3	db ' creating event semaphore',13,10
+     64		  6E 67	20 65 76 65 6E+
+     65		  74 20	73 65 6D 61 70+
+     66		  68 6F	72 65 0D 0A
+     67	000100B8  20 6F	70 65 6E 69 6E+	 sInfo4	db ' opening isochronous',13,10
+     68		  67 20	69 73 6F 63 68+
+     69		  72 6F	6E 6F 75 73 0D+
+     70		  0A
+     71	000100CE  20 71	75 65 75 69 6E+	 sInfo5	db ' queuing isochronous',13,10
+     72		  67 20	69 73 6F 63 68+
+     73		  72 6F	6E 6F 75 73 0D+
+     74		  0A
+     75	000100E4  20 63	6C 6F 73 69 6E+	 sInfo6	db ' closing isochronous',13,10
+     76		  67 20	69 73 6F 63 68+
+     77		  72 6F	6E 6F 75 73 0D+
+     78		  0A
+     79	000100FA  20 63	6C 6F 73 69 6E+	 sInfo7	db ' closing event semaphore',13,10
+     80		  67 20	65 76 65 6E 74+
+     81		  20 73	65 6D 61 70 68+
+     82		  6F 72	65 0D 0A
+     83	00010114  20 72	65 73 65 74 74+	 sInfo8	db ' resetting default interface',13,10
+     84		  69 6E	67 20 64 65 66+
+     85		  61 75	6C 74 20 69 6E+
+     86		  74 65	72 66 61 63 65+
+     87		  0D 0A
+     88	00010132  20 63	6C 6F 73 69 6E+	 sInfo9	db ' closing usbecd.sys',13,10
+     89		  67 20	75 73 62 65 63+
+     90		  64 2E	73 79 73 0D 0A
+     91	00010147  20 64	65 73 63 72 69+	 sInfoA	db ' descriptor:'
+     92		  70 74	6F 72 3A
+     93	00010153  20 70	61 72 61 6D 65+	 sInfoB	db ' parameters:'
+     94		  74 65	72 73 3A
+     95	0001015F  20 63	6F 6D 70 6C 65+	 sInfoC	db ' complete:'
+     96		  74 65	3A
+     97	00010169			 label sInfoD byte
+     98
+     99	00010169			 dataseg
+    100	00010169  20 73	65 74 74 69 6E+	 sInfoP	db ' setting video probe',13,10
+    101		  67 20	76 69 64 65 6F+
+    102		  20 70	72 6F 62 65 0D+
+    103		  0A
+    104	0001017F  20 67	65 74 74 69 6E+	 sInfoQ	db ' getting video probe',13,10
+    105		  67 20	76 69 64 65 6F+
+    106		  20 70	72 6F 62 65 0D+
+    107		  0A
+    108	00010195  20 63	6F 6D 6D 69 74+	 sInfoR	db ' committing	video format',13,10
+    109		  74 69	6E 67 20 76 69+
+    110		  64 65	6F 20 66 6F 72+
+    111		  6D 61	74 0D 0A
+    112	000101AF			 label sInfoS byte
+    113
+    114	000101AF			 dataseg
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 3
+video.asm
+
+
+
+    115	000101AF  20 6F	70 65 6E 69 6E+	 sTest0	db ' opening video.raw',13,10
+    116		  67 20	76 69 64 65 6F+
+    117		  2E 72	61 77 0D 0A
+    118	000101C3  20 63	6C 6F 73 69 6E+	 sTest1	db ' closing video.raw',13,10
+    119		  67 20	76 69 64 65 6F+
+    120		  2E 72	61 77 0D 0A
+    121	000101D7			 label sTest2 byte
+    122
+    123	000101D7			 udataseg
+    124	00000000  ????????		 ActionTaken dd	?
+    125	00000004  ????????		 BytesDone dd ?
+    126	00000008  ????????		 fhDevice dd ?
+    127	0000000C  ????????		 fhOutput dd ?
+    128
+    129	00000010			 udataseg
+    130	00000010  02*(????????)		 GetConfigDescriptor dd	2 dup(?)
+    131	00000018  2000*(??)		 ConfigDescriptor db 8192 dup(?)
+    132
+    133	00002018			 dataseg
+    134	000101D7  00 09	01 00 00 00 00+	 SetConfiguration db 00h,09h,01h,00h,00h,00h,00h,00h
+    135		  00
+    136
+    137	000101DF			 dataseg
+    138	000101DF  21 01	00 01 01 00 1A+	 SetNegotiate db 021h,01h,00h,01h,01h,00h,1Ah,00h,26 dup(0)
+    139		  00 1A*(00)
+    140	00010201  A1 81	00 01 01 00 1A+	 GetSuggested db 0A1h,81h,00h,01h,01h,00h,1Ah,00h,26 dup(0)
+    141		  00 1A*(00)
+    142	00010223  21 01	00 02 01 00 1A+	 SetSuggested db 021h,01h,00h,02h,01h,00h,1Ah,00h,26 dup(0)
+    143		  00 1A*(00)
+    144
+    145	00010245			 dataseg
+    146	00010245  01 0B	00 00 00 00 00+	 SetInterface db 01h,0Bh,00h,00h,00h,00h,00h,00h
+    147		  00
+    148
+    149	0001024D			 dataseg
+    150					 ; parameter buffer
+    151	0001024D  00000000		 IsoParm dd 0 ;	hEventSem
+    152	00010251  00			   db 00h ; bEndpointAddress
+    153	00010252  00			   db 00h ; bAlternateSetting
+    154	00010253  0000			   dw 0000h ; wIsoFrameLength
+    155	00010255  5555			   dw iSize ; wIsoBufferLength
+    156	00010257  0003			   dw iUsed ; wIsoBufferCount
+    157	00010259  0000			   dw fUsed ; wIsoFrameCount
+    158
+    159	0001025B			 udataseg
+    160	00002018  ????????		 wIsoFrameLength dd ?
+    161
+    162	0000201C			 dataseg
+    163	0001025B  00000003		 IsoFree dd iUsed
+    164	0001025F  00000000r		 IsoThis dd offset(IsoData)
+    165
+    166	00010263			 udataseg
+    167	0000201C  ????????		 DataLen dd ?
+    168	00002020  ????????		 IsoPost dd ?
+    169	00002024  ????????		 ParmLen dd ?
+    170
+    171	00002028			 codeseg
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 4
+video.asm
+
+
+
+    172	00000000			 proc MainRoutine c near
+    173					 arg @@Mod,@@Nul,@@Env,@@Arg
+    174					 ; determine begin of arguments
+1   175	00000000  C8 0000 00			 ENTERD	 00000h,0
+1   176	00000004  FC			   cld ; operate foreward scan
+    177	00000005  B9 00000200		   mov ecx,512 ; max scan length
+    178	0000000A  8B 7D	14		   mov edi,[@@Arg] ; start address
+    179	0000000D  F2> AE		   repne scasb ; find terminator
+    180					 ; process passed arguments
+    181	0000000F  E8 00000779		   call	ProcessArguments
+    182					 ; show	application started message
+    183					   call	DosWrite c,1,offset(sGood0),sGood1-sGood0,offset(BytesDone)
+1   184	00000014  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   185	00000019  6A 0A				 PUSH	 SGOOD1-SGOOD0
+1   186	0000001B  68 00010018r			 PUSH	 OFFSET(SGOOD0)
+1   187	00000020  6A 01				 PUSH	 1
+1   188	00000022  E8 00000000e			 CALL	 DOSWRITE
+1   189	00000027  83 C4	10			 ADD	 ESP,00010h
+    190					 ; open	raw iso	data output file
+    191					   call	DosWrite c,1,offset(sTest0),sTest1-sTest0,offset(BytesDone)
+1   192	0000002A  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   193	0000002F  6A 14				 PUSH	 STEST1-STEST0
+1   194	00000031  68 000101AFr			 PUSH	 OFFSET(STEST0)
+1   195	00000036  6A 01				 PUSH	 1
+1   196	00000038  E8 00000000e			 CALL	 DOSWRITE
+1   197	0000003D  83 C4	10			 ADD	 ESP,00010h
+    198					   call	DosOpen	c,offset(szOutput),offset(fhOutput),offset(ActionTaken),0,0,012h,0191h,0
+1   199	00000040  6A 00				 PUSH	 0
+1   200	00000042  68 00000191			 PUSH	 0191H
+1   201	00000047  6A 12				 PUSH	 012H
+1   202	00000049  6A 00				 PUSH	 0
+1   203	0000004B  6A 00				 PUSH	 0
+1   204	0000004D  68 00000000r			 PUSH	 OFFSET(ACTIONTAKEN)
+1   205	00000052  68 0000000Cr			 PUSH	 OFFSET(FHOUTPUT)
+1   206	00000057  68 0001000Er			 PUSH	 OFFSET(SZOUTPUT)
+1   207	0000005C  E8 00000000e			 CALL	 DOSOPEN
+1   208	00000061  83 C4	20			 ADD	 ESP,00020h
+    209	00000064  E8 0000079D		   call	ShowReturnCode
+    210	00000069  0F 85	000003AD	   jnz BadRawOpenAttempt
+    211					 ; open	usb video stream device	driver
+    212					   call	DosWrite c,1,offset(sInfo0),sInfo1-sInfo0,offset(BytesDone)
+1   213	0000006F  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   214	00000074  6A 15				 PUSH	 SINFO1-SINFO0
+1   215	00000076  68 00010052r			 PUSH	 OFFSET(SINFO0)
+1   216	0000007B  6A 01				 PUSH	 1
+1   217	0000007D  E8 00000000e			 CALL	 DOSWRITE
+1   218	00000082  83 C4	10			 ADD	 ESP,00010h
+    219					   call	DosOpen	c,offset(szDevice),offset(fhDevice),offset(ActionTaken),0,0,1,18,0
+1   220	00000085  6A 00				 PUSH	 0
+1   221	00000087  6A 12				 PUSH	 18
+1   222	00000089  6A 01				 PUSH	 1
+1   223	0000008B  6A 00				 PUSH	 0
+1   224	0000008D  6A 00				 PUSH	 0
+1   225	0000008F  68 00000000r			 PUSH	 OFFSET(ACTIONTAKEN)
+1   226	00000094  68 00000008r			 PUSH	 OFFSET(FHDEVICE)
+1   227	00000099  68 00010000r			 PUSH	 OFFSET(SZDEVICE)
+1   228	0000009E  E8 00000000e			 CALL	 DOSOPEN
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 5
+video.asm
+
+
+
+1   229	000000A3  83 C4	20			 ADD	 ESP,00020h
+    230	000000A6  E8 0000075B		   call	ShowReturnCode
+    231	000000AB  0F 85	00000342	   jnz BadDosOpenAttempt
+    232					 ; obtain 1st configuration descriptor
+    233	000000B1  C7 05	00000010r     +	   mov [GetConfigDescriptor+0],02000680h
+    234		  02000680
+    235	000000BB  C7 05	00000014r     +	   mov [GetConfigDescriptor+4],20000000h
+    236		  20000000
+    237					   call	DosWrite c,[fhDevice],offset(GetConfigDescriptor),8192+8,offset(BytesDone)
+1   238	000000C5  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   239	000000CA  68 00002008			 PUSH	 8192+8
+1   240	000000CF  68 00000010r			 PUSH	 OFFSET(GETCONFIGDESCRIPTOR)
+1   241	000000D4  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   242	000000DA  E8 00000000e			 CALL	 DOSWRITE
+1   243	000000DF  83 C4	10			 ADD	 ESP,00010h
+    244	000000E2  E8 0000071F		   call	ShowReturnCode
+    245	000000E7  0F 85	000002DD	   jnz NotIsoOpenAttempt
+    246					 ; fix isochronous open	arguments
+    247	000000ED  BE 00000018r		   mov esi,offset(ConfigDescriptor)
+    248					 ; get total descriptor	size
+    249	000000F2  0F B7	5E 02		   movzx ebx,[word(esi+2)]
+    250	000000F6			 label NextDescriptor near
+    251					 ; point to next descriptor
+    252	000000F6  25 000000FF		   and eax,0FFh	; length
+    253	000000FB  03 F0			   add esi,eax ; next
+    254	000000FD  2B D8			   sub ebx,eax ; next
+    255	000000FF  0F 86	000002C5	   jna NotIsoOpenAttempt
+    256	00000105			 label ScanDescriptors near
+    257					 ; find	interface descriptor
+    258	00000105  8B 06			   mov eax,[esi] ; start
+    259	00000107  80 FC	04		   cmp ah,4 ; interface
+    260	0000010A  75 EA			   jne NextDescriptor
+    261					 ; check interface descriptor
+    262	0000010C  8B 4E	02		   mov ecx,[esi+2] ; values
+    263					 ; verify bInterfaceNumber
+    264	0000010F  3A 0D	00010249r	   cmp cl,[SetInterface+4]
+    265	00000115  75 DF			   jne NextDescriptor
+    266					 ; verify bAlternateSetting
+    267	00000117  3A 2D	00010247r	   cmp ch,[SetInterface+2]
+    268	0000011D  75 D7			   jne NextDescriptor
+    269					 ; show	matched	descriptor
+    270					   call	DosWrite c,1,offset(sInfoA),sInfoB-sInfoA,offset(BytesDone)
+1   271	0000011F  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   272	00000124  6A 0C				 PUSH	 SINFOB-SINFOA
+1   273	00000126  68 00010147r			 PUSH	 OFFSET(SINFOA)
+1   274	0000012B  6A 01				 PUSH	 1
+1   275	0000012D  E8 00000000e			 CALL	 DOSWRITE
+1   276	00000132  83 C4	10			 ADD	 ESP,00010h
+    277	00000135  8B 06			   mov eax,[esi] ; start
+    278	00000137  0F C8			   bswap eax ; reorder
+    279	00000139  E8 000006C8		   call	ShowReturnCode
+    280	0000013E  0F C8			   bswap eax ; restore
+    281	00000140			 label ScanInterface near
+    282					 ; point to next descriptor
+    283	00000140  25 000000FF		   and eax,0FFh	; length
+    284	00000145  03 F0			   add esi,eax ; next
+    285	00000147  2B D8			   sub ebx,eax ; next
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 6
+video.asm
+
+
+
+    286	00000149  0F 86	0000027B	   jna NotIsoOpenAttempt
+    287					 ; find	endpoint descriptor
+    288	0000014F  8B 06			   mov eax,[esi] ; start
+    289	00000151  80 FC	05		   cmp ah,5 ; endpoint
+    290	00000154  75 EA			   jne ScanInterface
+    291					 ; check endpoint descriptor
+    292	00000156  8B 4E	02		   mov ecx,[esi+2] ; values
+    293					 ; verify bEndpointAddress
+    294	00000159  3A 0D	00010251r	   cmp cl,[byte(IsoParm+4)]
+    295	0000015F  75 DF			   jne ScanInterface
+    296					 ; verify bmAttributes
+    297	00000161  80 E5	F3		   and ch,0F3h ; synctype
+    298	00000164  80 FD	01		   cmp ch,1 ; isochronous
+    299	00000167  75 D7			   jne ScanInterface
+    300					 ; override wMaxPacketSize
+    301	00000169  C1 E9	10		   shr ecx,16 ;	wMaxPacketSize
+    302	0000016C  66| 89 0D 00010253r	   mov [word(IsoParm+6)],cx
+    303					 ; calculate wIsoFrameLength
+    304	00000173  8B C1			   mov eax,ecx ; wMaxPacketSize
+    305	00000175  80 E4	07		   and ah,07h ;	wIsoFrameLength
+    306	00000178  A3 00002018r		   mov [wIsoFrameLength],eax
+    307	0000017D  80 E5	18		   and ch,18h ;	multiplier
+    308	00000180  C0 ED	03		   shr ch,03h ;	position
+    309	00000183  80 FD	03		   cmp ch,03h ;	invalid
+    310	00000186  74 0F			   je EndMultiplier
+    311	00000188  80 FD	01		   cmp ch,01h ;	twice
+    312	0000018B  72 0A			   jb EndMultiplier
+    313	0000018D  74 02			   je AddMultiplier
+    314	0000018F  03 C0			   add eax,eax ; twice
+    315	00000191			 label AddMultiplier near
+    316	00000191  01 05	00002018r	   add [wIsoFrameLength],eax
+    317	00000197			 label EndMultiplier near
+    318					 ; show	matched	descriptor
+    319					   call	DosWrite c,1,offset(sInfoA),sInfoB-sInfoA,offset(BytesDone)
+1   320	00000197  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   321	0000019C  6A 0C				 PUSH	 SINFOB-SINFOA
+1   322	0000019E  68 00010147r			 PUSH	 OFFSET(SINFOA)
+1   323	000001A3  6A 01				 PUSH	 1
+1   324	000001A5  E8 00000000e			 CALL	 DOSWRITE
+1   325	000001AA  83 C4	10			 ADD	 ESP,00010h
+    326	000001AD  8B 06			   mov eax,[esi] ; start
+    327	000001AF  0F C8			   bswap eax ; reorder
+    328	000001B1  E8 00000650		   call	ShowReturnCode
+    329					 ; show	current	parameters
+    330					   call	DosWrite c,1,offset(sInfoB),sInfoC-sInfoB,offset(BytesDone)
+1   331	000001B6  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   332	000001BB  6A 0C				 PUSH	 SINFOC-SINFOB
+1   333	000001BD  68 00010153r			 PUSH	 OFFSET(SINFOB)
+1   334	000001C2  6A 01				 PUSH	 1
+1   335	000001C4  E8 00000000e			 CALL	 DOSWRITE
+1   336	000001C9  83 C4	10			 ADD	 ESP,00010h
+    337	000001CC  A1 00010251r		   mov eax,[IsoParm+4]
+    338	000001D1  E8 00000630		   call	ShowReturnCode
+    339					 ; set configuration request
+    340					   call	DosWrite c,1,offset(sInfo1),sInfo2-sInfo1,offset(BytesDone)
+1   341	000001D6  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   342	000001DB  6A 18				 PUSH	 SINFO2-SINFO1
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 7
+video.asm
+
+
+
+1   343	000001DD  68 00010067r			 PUSH	 OFFSET(SINFO1)
+1   344	000001E2  6A 01				 PUSH	 1
+1   345	000001E4  E8 00000000e			 CALL	 DOSWRITE
+1   346	000001E9  83 C4	10			 ADD	 ESP,00010h
+    347					   call	DosWrite c,[fhDevice],offset(SetConfiguration),8,offset(BytesDone)
+1   348	000001EC  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   349	000001F1  6A 08				 PUSH	 8
+1   350	000001F3  68 000101D7r			 PUSH	 OFFSET(SETCONFIGURATION)
+1   351	000001F8  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   352	000001FE  E8 00000000e			 CALL	 DOSWRITE
+1   353	00000203  83 C4	10			 ADD	 ESP,00010h
+    354	00000206  E8 000005FB		   call	ShowReturnCode
+    355	0000020B  0F 85	000001B9	   jnz NotIsoOpenAttempt
+    356					 ; supply negotiate setting
+    357					   call	DosWrite c,1,offset(sInfoP),sInfoQ-sInfoP,offset(BytesDone)
+1   358	00000211  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   359	00000216  6A 16				 PUSH	 SINFOQ-SINFOP
+1   360	00000218  68 00010169r			 PUSH	 OFFSET(SINFOP)
+1   361	0000021D  6A 01				 PUSH	 1
+1   362	0000021F  E8 00000000e			 CALL	 DOSWRITE
+1   363	00000224  83 C4	10			 ADD	 ESP,00010h
+    364					   call	DosWrite c,[fhDevice],offset(SetNegotiate),34,offset(BytesDone)
+1   365	00000227  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   366	0000022C  6A 22				 PUSH	 34
+1   367	0000022E  68 000101DFr			 PUSH	 OFFSET(SETNEGOTIATE)
+1   368	00000233  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   369	00000239  E8 00000000e			 CALL	 DOSWRITE
+1   370	0000023E  83 C4	10			 ADD	 ESP,00010h
+    371	00000241  E8 000005C0		   call	ShowReturnCode
+    372	00000246  0F 85	0000017E	   jnz NotIsoOpenAttempt
+    373					 ; obtain suggested setting
+    374					   call	DosWrite c,1,offset(sInfoQ),sInfoR-sInfoQ,offset(BytesDone)
+1   375	0000024C  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   376	00000251  6A 16				 PUSH	 SINFOR-SINFOQ
+1   377	00000253  68 0001017Fr			 PUSH	 OFFSET(SINFOQ)
+1   378	00000258  6A 01				 PUSH	 1
+1   379	0000025A  E8 00000000e			 CALL	 DOSWRITE
+1   380	0000025F  83 C4	10			 ADD	 ESP,00010h
+    381					   call	DosWrite c,[fhDevice],offset(GetSuggested),34,offset(BytesDone)
+1   382	00000262  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   383	00000267  6A 22				 PUSH	 34
+1   384	00000269  68 00010201r			 PUSH	 OFFSET(GETSUGGESTED)
+1   385	0000026E  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   386	00000274  E8 00000000e			 CALL	 DOSWRITE
+1   387	00000279  83 C4	10			 ADD	 ESP,00010h
+    388	0000027C  E8 00000585		   call	ShowReturnCode
+    389	00000281  0F 85	00000143	   jnz NotIsoOpenAttempt
+    390					 ; commit suggested setting
+    391	00000287  B9 0000001A		   mov ecx,26 ;	size suggestion
+    392	0000028C  BE 00010209r		   mov esi,offset(GetSuggested+8)
+    393	00000291  BF 0001022Br		   mov edi,offset(SetSuggested+8)
+    394	00000296  F3> A4		   rep movsb ; copy suggested setting
+    395					   call	DosWrite c,1,offset(sInfoR),sInfoS-sInfoR,offset(BytesDone)
+1   396	00000298  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   397	0000029D  6A 1A				 PUSH	 SINFOS-SINFOR
+1   398	0000029F  68 00010195r			 PUSH	 OFFSET(SINFOR)
+1   399	000002A4  6A 01				 PUSH	 1
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 8
+video.asm
+
+
+
+1   400	000002A6  E8 00000000e			 CALL	 DOSWRITE
+1   401	000002AB  83 C4	10			 ADD	 ESP,00010h
+    402					   call	DosWrite c,[fhDevice],offset(SetSuggested),34,offset(BytesDone)
+1   403	000002AE  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   404	000002B3  6A 22				 PUSH	 34
+1   405	000002B5  68 00010223r			 PUSH	 OFFSET(SETSUGGESTED)
+1   406	000002BA  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   407	000002C0  E8 00000000e			 CALL	 DOSWRITE
+1   408	000002C5  83 C4	10			 ADD	 ESP,00010h
+    409	000002C8  E8 00000539		   call	ShowReturnCode
+    410	000002CD  0F 85	000000F7	   jnz NotIsoOpenAttempt
+    411					 ; setup alternative interface request
+    412					   call	DosWrite c,1,offset(sInfo2),sInfo3-sInfo2,offset(BytesDone)
+1   413	000002D3  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   414	000002D8  6A 1E				 PUSH	 SINFO3-SINFO2
+1   415	000002DA  68 0001007Fr			 PUSH	 OFFSET(SINFO2)
+1   416	000002DF  6A 01				 PUSH	 1
+1   417	000002E1  E8 00000000e			 CALL	 DOSWRITE
+1   418	000002E6  83 C4	10			 ADD	 ESP,00010h
+    419					   call	DosWrite c,[fhDevice],offset(SetInterface),8,offset(BytesDone)
+1   420	000002E9  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   421	000002EE  6A 08				 PUSH	 8
+1   422	000002F0  68 00010245r			 PUSH	 OFFSET(SETINTERFACE)
+1   423	000002F5  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   424	000002FB  E8 00000000e			 CALL	 DOSWRITE
+1   425	00000300  83 C4	10			 ADD	 ESP,00010h
+    426	00000303  E8 000004FE		   call	ShowReturnCode
+    427	00000308  0F 85	000000BC	   jnz NotIsoOpenAttempt
+    428					 ; create isochronous event semaphore
+    429					   call	DosWrite c,1,offset(sInfo3),sInfo4-sInfo3,offset(BytesDone)
+1   430	0000030E  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   431	00000313  6A 1B				 PUSH	 SINFO4-SINFO3
+1   432	00000315  68 0001009Dr			 PUSH	 OFFSET(SINFO3)
+1   433	0000031A  6A 01				 PUSH	 1
+1   434	0000031C  E8 00000000e			 CALL	 DOSWRITE
+1   435	00000321  83 C4	10			 ADD	 ESP,00010h
+    436					   call	DosCreateEventSem c,0,offset(IsoParm),1,0
+1   437	00000324  6A 00				 PUSH	 0
+1   438	00000326  6A 01				 PUSH	 1
+1   439	00000328  68 0001024Dr			 PUSH	 OFFSET(ISOPARM)
+1   440	0000032D  6A 00				 PUSH	 0
+1   441	0000032F  E8 00000000e			 CALL	 DOSCREATEEVENTSEM
+1   442	00000334  83 C4	10			 ADD	 ESP,00010h
+    443	00000337  E8 000004CA		   call	ShowReturnCode
+    444	0000033C  0F 85	00000088	   jnz NotIsoOpenAttempt
+    445					 ; register termination	processing
+    446					   call	DosExitList c,1,offset(ProcessComplete)
+1   447	00000342  68 0000043Er			 PUSH	 OFFSET(PROCESSCOMPLETE)
+1   448	00000347  6A 01				 PUSH	 1
+1   449	00000349  E8 00000000e			 CALL	 DOSEXITLIST
+1   450	0000034E  83 C4	08			 ADD	 ESP,00008h
+    451					 ; open	isochronous transfer
+    452					   call	DosWrite c,1,offset(sInfo4),sInfo5-sInfo4,offset(BytesDone)
+1   453	00000351  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   454	00000356  6A 16				 PUSH	 SINFO5-SINFO4
+1   455	00000358  68 000100B8r			 PUSH	 OFFSET(SINFO4)
+1   456	0000035D  6A 01				 PUSH	 1
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 9
+video.asm
+
+
+
+1   457	0000035F  E8 00000000e			 CALL	 DOSWRITE
+1   458	00000364  83 C4	10			 ADD	 ESP,00010h
+    459					   call	DosDevIOCtl c,[fhDevice],0ECh,040h,offset(IsoParm),14,offset(ParmLen),offset	    +
+    460					 (IsoData),tSize,offset(DataLen)
+1   461	00000367  68 0000201Cr			 PUSH	 OFFSET(DATALEN)
+1   462	0000036C  68 0000FFFF			 PUSH	 TSIZE
+1   463	00000371  68 00000000r			 PUSH	 OFFSET(ISODATA)
+1   464	00000376  68 00002024r			 PUSH	 OFFSET(PARMLEN)
+1   465	0000037B  6A 0E				 PUSH	 14
+1   466	0000037D  68 0001024Dr			 PUSH	 OFFSET(ISOPARM)
+1   467	00000382  6A 40				 PUSH	 040H
+1   468	00000384  68 000000EC			 PUSH	 0ECH
+1   469	00000389  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   470	0000038F  E8 00000000e			 CALL	 DOSDEVIOCTL
+1   471	00000394  83 C4	24			 ADD	 ESP,00024h
+    472	00000397  E8 0000046A		   call	ShowReturnCode
+    473	0000039C  75 28			   jnz EndProcess
+    474					 ; show	application waiting message
+    475					   call	DosWrite c,1,offset(sGood2),sGood3-sGood2,offset(BytesDone)
+1   476	0000039E  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   477	000003A3  6A 0C				 PUSH	 SGOOD3-SGOOD2
+1   478	000003A5  68 0001002Cr			 PUSH	 OFFSET(SGOOD2)
+1   479	000003AA  6A 01				 PUSH	 1
+1   480	000003AC  E8 00000000e			 CALL	 DOSWRITE
+1   481	000003B1  83 C4	10			 ADD	 ESP,00010h
+    482					 ; hang	in here	for 3 seconds
+    483					   call	DosSleep c,3000
+1   484	000003B4  68 00000BB8			 PUSH	 3000
+1   485	000003B9  E8 00000000e			 CALL	 DOSSLEEP
+1   486	000003BE  83 C4	04			 ADD	 ESP,00004h
+    487					 ; process iso buffers
+    488	000003C1  E8 000001A7		   call	ProcessIsoStream
+    489	000003C6			 label EndProcess near
+    490					 ; force process complete
+    491	000003C6  2B C0			   sub eax,eax ; success
+1   492	000003C8  C9				 LEAVED
+1   493	000003C9  C3				 RET	 00000h
+    494	000003CA			 label NotIsoOpenAttempt near
+    495					 ; close usb video stream device driver
+    496					   call	DosWrite c,1,offset(sInfo9),sInfoA-sInfo9,offset(BytesDone)
+1   497	000003CA  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   498	000003CF  6A 15				 PUSH	 SINFOA-SINFO9
+1   499	000003D1  68 00010132r			 PUSH	 OFFSET(SINFO9)
+1   500	000003D6  6A 01				 PUSH	 1
+1   501	000003D8  E8 00000000e			 CALL	 DOSWRITE
+1   502	000003DD  83 C4	10			 ADD	 ESP,00010h
+    503					   call	DosClose c,[fhDevice]
+1   504	000003E0  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   505	000003E6  E8 00000000e			 CALL	 DOSCLOSE
+1   506	000003EB  83 C4	04			 ADD	 ESP,00004h
+    507	000003EE  E8 00000413		   call	ShowReturnCode
+    508	000003F3			 label BadDosOpenAttempt near
+    509					 ; close raw iso data output file
+    510					   call	DosWrite c,1,offset(sTest1),sTest2-sTest1,offset(BytesDone)
+1   511	000003F3  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   512	000003F8  6A 14				 PUSH	 STEST2-STEST1
+1   513	000003FA  68 000101C3r			 PUSH	 OFFSET(STEST1)
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 10
+video.asm
+
+
+
+1   514	000003FF  6A 01				 PUSH	 1
+1   515	00000401  E8 00000000e			 CALL	 DOSWRITE
+1   516	00000406  83 C4	10			 ADD	 ESP,00010h
+    517					   call	DosClose c,[fhOutput]
+1   518	00000409  FF 35	0000000Cr		 PUSH	 [FHOUTPUT]
+1   519	0000040F  E8 00000000e			 CALL	 DOSCLOSE
+1   520	00000414  83 C4	04			 ADD	 ESP,00004h
+    521	00000417  E8 000003EA		   call	ShowReturnCode
+    522	0000041C			 label BadRawOpenAttempt near
+    523					 ; show	application stopped message
+    524					   call	DosWrite c,1,offset(sGood1),10,offset(BytesDone)
+1   525	0000041C  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   526	00000421  6A 0A				 PUSH	 10
+1   527	00000423  68 00010022r			 PUSH	 OFFSET(SGOOD1)
+1   528	00000428  6A 01				 PUSH	 1
+1   529	0000042A  E8 00000000e			 CALL	 DOSWRITE
+1   530	0000042F  83 C4	10			 ADD	 ESP,00010h
+    531					 ; exit	the process
+    532					   call	DosExit	c,1,0
+1   533	00000432  6A 00				 PUSH	 0
+1   534	00000434  6A 01				 PUSH	 1
+1   535	00000436  E8 00000000e			 CALL	 DOSEXIT
+1   536	0000043B  83 C4	08			 ADD	 ESP,00008h
+    537	0000043E			 endp MainRoutine
+    538
+    539	0000043E			 codeseg
+    540	0000043E			 proc ProcessComplete c	near
+    541					 arg @@ReasonCode
+    542					 ; show	application quitting message
+1   543	0000043E  C8 0000 00			 ENTERD	 00000h,0
+1   544					   call	DosWrite c,1,offset(sGood4),sGood5-sGood4,offset(BytesDone)
+2   545	00000442  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+2   546	00000447  6A 0D				 PUSH	 SGOOD5-SGOOD4
+2   547	00000449  68 00010045r			 PUSH	 OFFSET(SGOOD4)
+2   548	0000044E  6A 01				 PUSH	 1
+2   549	00000450  E8 00000000e			 CALL	 DOSWRITE
+2   550	00000455  83 C4	10			 ADD	 ESP,00010h
+    551					 ; report reason code
+    552					 ; mov eax,[@@ReasonCode]
+    553					 ; call	ShowReturnCode
+    554					 ; close isochronous transfer
+    555					   call	DosWrite c,1,offset(sInfo6),sInfo7-sInfo6,offset(BytesDone)
+1   556	00000458  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   557	0000045D  6A 16				 PUSH	 SINFO7-SINFO6
+1   558	0000045F  68 000100E4r			 PUSH	 OFFSET(SINFO6)
+1   559	00000464  6A 01				 PUSH	 1
+1   560	00000466  E8 00000000e			 CALL	 DOSWRITE
+1   561	0000046B  83 C4	10			 ADD	 ESP,00010h
+    562					   call	DosDevIOCtl c,[fhDevice],0ECh,041h,0,0,0,0,0,0
+1   563	0000046E  6A 00				 PUSH	 0
+1   564	00000470  6A 00				 PUSH	 0
+1   565	00000472  6A 00				 PUSH	 0
+1   566	00000474  6A 00				 PUSH	 0
+1   567	00000476  6A 00				 PUSH	 0
+1   568	00000478  6A 00				 PUSH	 0
+1   569	0000047A  6A 41				 PUSH	 041H
+1   570	0000047C  68 000000EC			 PUSH	 0ECH
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 11
+video.asm
+
+
+
+1   571	00000481  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   572	00000487  E8 00000000e			 CALL	 DOSDEVIOCTL
+1   573	0000048C  83 C4	24			 ADD	 ESP,00024h
+    574	0000048F  E8 00000372		   call	ShowReturnCode
+    575					 ; close isochronous event semaphore
+    576					   call	DosWrite c,1,offset(sInfo7),sInfo8-sInfo7,offset(BytesDone)
+1   577	00000494  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   578	00000499  6A 1A				 PUSH	 SINFO8-SINFO7
+1   579	0000049B  68 000100FAr			 PUSH	 OFFSET(SINFO7)
+1   580	000004A0  6A 01				 PUSH	 1
+1   581	000004A2  E8 00000000e			 CALL	 DOSWRITE
+1   582	000004A7  83 C4	10			 ADD	 ESP,00010h
+    583					   call	DosCloseEventSem c,[IsoParm]
+1   584	000004AA  FF 35	0001024Dr		 PUSH	 [ISOPARM]
+1   585	000004B0  E8 00000000e			 CALL	 DOSCLOSEEVENTSEM
+1   586	000004B5  83 C4	04			 ADD	 ESP,00004h
+    587	000004B8  E8 00000349		   call	ShowReturnCode
+    588					 ; reset alternative interface request
+    589	000004BD  C6 05	00010247r 00	   mov [SetInterface+2],0 ; zero bandwidth
+    590					   call	DosWrite c,1,offset(sInfo8),sInfo9-sInfo8,offset(BytesDone)
+1   591	000004C4  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   592	000004C9  6A 1E				 PUSH	 SINFO9-SINFO8
+1   593	000004CB  68 00010114r			 PUSH	 OFFSET(SINFO8)
+1   594	000004D0  6A 01				 PUSH	 1
+1   595	000004D2  E8 00000000e			 CALL	 DOSWRITE
+1   596	000004D7  83 C4	10			 ADD	 ESP,00010h
+    597					   call	DosWrite c,[fhDevice],offset(SetInterface),8,offset(BytesDone)
+1   598	000004DA  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   599	000004DF  6A 08				 PUSH	 8
+1   600	000004E1  68 00010245r			 PUSH	 OFFSET(SETINTERFACE)
+1   601	000004E6  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   602	000004EC  E8 00000000e			 CALL	 DOSWRITE
+1   603	000004F1  83 C4	10			 ADD	 ESP,00010h
+    604	000004F4  E8 0000030D		   call	ShowReturnCode
+    605					 ; close usb video stream device driver
+    606					   call	DosWrite c,1,offset(sInfo9),sInfoA-sInfo9,offset(BytesDone)
+1   607	000004F9  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   608	000004FE  6A 15				 PUSH	 SINFOA-SINFO9
+1   609	00000500  68 00010132r			 PUSH	 OFFSET(SINFO9)
+1   610	00000505  6A 01				 PUSH	 1
+1   611	00000507  E8 00000000e			 CALL	 DOSWRITE
+1   612	0000050C  83 C4	10			 ADD	 ESP,00010h
+    613					   call	DosClose c,[fhDevice]
+1   614	0000050F  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   615	00000515  E8 00000000e			 CALL	 DOSCLOSE
+1   616	0000051A  83 C4	04			 ADD	 ESP,00004h
+    617	0000051D  E8 000002E4		   call	ShowReturnCode
+    618					 ; close raw iso data output file
+    619					   call	DosWrite c,1,offset(sTest1),sTest2-sTest1,offset(BytesDone)
+1   620	00000522  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   621	00000527  6A 14				 PUSH	 STEST2-STEST1
+1   622	00000529  68 000101C3r			 PUSH	 OFFSET(STEST1)
+1   623	0000052E  6A 01				 PUSH	 1
+1   624	00000530  E8 00000000e			 CALL	 DOSWRITE
+1   625	00000535  83 C4	10			 ADD	 ESP,00010h
+    626					   call	DosClose c,[fhOutput]
+1   627	00000538  FF 35	0000000Cr		 PUSH	 [FHOUTPUT]
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 12
+video.asm
+
+
+
+1   628	0000053E  E8 00000000e			 CALL	 DOSCLOSE
+1   629	00000543  83 C4	04			 ADD	 ESP,00004h
+    630	00000546  E8 000002BB		   call	ShowReturnCode
+    631					 ; show	application stopped message
+    632					   call	DosWrite c,1,offset(sGood1),10,offset(BytesDone)
+1   633	0000054B  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   634	00000550  6A 0A				 PUSH	 10
+1   635	00000552  68 00010022r			 PUSH	 OFFSET(SGOOD1)
+1   636	00000557  6A 01				 PUSH	 1
+1   637	00000559  E8 00000000e			 CALL	 DOSWRITE
+1   638	0000055E  83 C4	10			 ADD	 ESP,00010h
+    639					 ; exit	termination process
+    640					   call	DosExitList c,3,0)
+1   641	00000561  6A 00				 PUSH	 0
+1   642	00000563  6A 03				 PUSH	 3
+1   643	00000565  E8 00000000e			 CALL	 DOSEXITLIST
+1   644	0000056A  83 C4	08			 ADD	 ESP,00008h
+    645	0000056D			 endp ProcessComplete
+    646
+    647	0000056D			 dataseg
+    648	00010263  00000000		 RawBytesDone dd 0
+    649
+    650	00010267			 codeseg
+    651	0000056D			 proc ProcessIsoStream near
+    652					 ; set time critical priority
+    653					 ; call	DosSetPriority c,2,3,31,0
+    654					 ; prepare for frame size arrays
+    655	0000056D  BF 00005551r		   mov edi,offset(IsoData+iSize-4)
+    656	00000572			 label QueueEmptyIsoBuffers near
+    657					 ; initialize frame size array
+    658	00000572  0F B7	0D 00010259r	   movzx ecx,[word(IsoParm+12)]
+    659	00000579  85 C9			   test	ecx,ecx	; wIsoFrameCount
+    660	0000057B  74 12			   jz EndSetFrameSizeArray
+    661	0000057D  A1 00002018r		   mov eax,[wIsoFrameLength]
+    662	00000582  2B F9			   sub edi,ecx ; wIsoFrameCount
+    663	00000584  2B F9			   sub edi,ecx ; wIsoFrameCount
+    664	00000586  F3> 66| AB		   rep stosw ; wIsoFrameLength
+    665	00000589  81 C7	00005555	   add edi,iSize ; bump	pointer
+    666	0000058F			 label EndSetFrameSizeArray near
+    667					 ; queue empty isochronous buffers
+    668					   call	DosWrite c,1,offset(sInfo5),sInfo6-sInfo5,offset(BytesDone)
+1   669	0000058F  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   670	00000594  6A 16				 PUSH	 SINFO6-SINFO5
+1   671	00000596  68 000100CEr			 PUSH	 OFFSET(SINFO5)
+1   672	0000059B  6A 01				 PUSH	 1
+1   673	0000059D  E8 00000000e			 CALL	 DOSWRITE
+1   674	000005A2  83 C4	10			 ADD	 ESP,00010h
+    675					   call	DosDevIOCtl c,[fhDevice],0ECh,042h,0,0,0,0,0,0
+1   676	000005A5  6A 00				 PUSH	 0
+1   677	000005A7  6A 00				 PUSH	 0
+1   678	000005A9  6A 00				 PUSH	 0
+1   679	000005AB  6A 00				 PUSH	 0
+1   680	000005AD  6A 00				 PUSH	 0
+1   681	000005AF  6A 00				 PUSH	 0
+1   682	000005B1  6A 42				 PUSH	 042H
+1   683	000005B3  68 000000EC			 PUSH	 0ECH
+1   684	000005B8  FF 35	00000008r		 PUSH	 [FHDEVICE]
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 13
+video.asm
+
+
+
+1   685	000005BE  E8 00000000e			 CALL	 DOSDEVIOCTL
+1   686	000005C3  83 C4	24			 ADD	 ESP,00024h
+    687	000005C6  E8 0000023B		   call	ShowReturnCode
+    688	000005CB  FF 0D	0001025Br	   dec [IsoFree] ; count
+    689	000005D1  75 9F			   jnz QueueEmptyIsoBuffers
+    690	000005D3			 label AwaitFilledIsoBuffers near
+    691					 ; await filled	isochronous buffers
+    692					   call	DosWrite c,1,offset(sGood3),sGood4-sGood3,offset(BytesDone)
+1   693	000005D3  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   694	000005D8  6A 0D				 PUSH	 SGOOD4-SGOOD3
+1   695	000005DA  68 00010038r			 PUSH	 OFFSET(SGOOD3)
+1   696	000005DF  6A 01				 PUSH	 1
+1   697	000005E1  E8 00000000e			 CALL	 DOSWRITE
+1   698	000005E6  83 C4	10			 ADD	 ESP,00010h
+    699					   call	DosWaitEventSem	c,[IsoParm],-1
+1   700	000005E9  6A FF				 PUSH	 -1
+1   701	000005EB  FF 35	0001024Dr		 PUSH	 [ISOPARM]
+1   702	000005F1  E8 00000000e			 CALL	 DOSWAITEVENTSEM
+1   703	000005F6  83 C4	08			 ADD	 ESP,00008h
+    704	000005F9  E8 00000208		   call	ShowReturnCode
+    705					 ; update filled isochronous buffers
+    706					   call	DosResetEventSem c,[IsoParm],offset(IsoPost)
+1   707	000005FE  68 00002020r			 PUSH	 OFFSET(ISOPOST)
+1   708	00000603  FF 35	0001024Dr		 PUSH	 [ISOPARM]
+1   709	00000609  E8 00000000e			 CALL	 DOSRESETEVENTSEM
+1   710	0000060E  83 C4	08			 ADD	 ESP,00008h
+    711	00000611  A1 00002020r		   mov eax,[IsoPost] ; additional
+    712	00000616  01 05	0001025Br	   add [IsoFree],eax ; current
+    713	0000061C			 label ProcessRawIsoData near
+    714					 ; address current isochronous buffer
+    715	0000061C  8B 35	0001025Fr	   mov esi,[IsoThis] ; this buffer
+    716					 ; show	actual completion lengths
+    717					   call	DosWrite c,1,offset(sInfoC),sInfoD-sInfoC,offset(BytesDone)
+1   718	00000622  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   719	00000627  6A 0A				 PUSH	 SINFOD-SINFOC
+1   720	00000629  68 0001015Fr			 PUSH	 OFFSET(SINFOC)
+1   721	0000062E  6A 01				 PUSH	 1
+1   722	00000630  E8 00000000e			 CALL	 DOSWRITE
+1   723	00000635  83 C4	10			 ADD	 ESP,00010h
+    724	00000638  8B 86	00005551	   mov eax,[dword(esi+iSize-4)]
+    725	0000063E  E8 000001C3		   call	ShowReturnCode
+    726					 ; write current iso buffer
+    727	00000643  0F B7	0D 00010259r	   movzx ecx,[word(IsoParm+12)]
+    728	0000064A  85 C9			   test	ecx,ecx	; wIsoFrameCount
+    729	0000064C  74 42			   jz WriteStreamDataBytes
+    730					 ; get start of	frame size array
+    731	0000064E  25 0000FFFF		   and eax,0FFFFh ; buffer1length
+    732	00000653  8D 3C	06		   lea edi,[esi+eax] ; size array
+    733	00000656  2B DB			   sub ebx,ebx ; 1st frame index
+    734	00000658			 label WriteIsochronousFrame near
+    735					 ; write to raw	iso data output	file
+    736	00000658  0F B7	04 5F		   movzx eax,[word(edi+ebx*2)] ; size
+    737	0000065C  01 05	00010263r	   add [RawBytesDone],eax ; total
+    738					   call	DosWrite c,[fhOutput],esi,eax,offset(BytesDone)
+1   739	00000662  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   740	00000667  50				 PUSH	 EAX
+1   741	00000668  56				 PUSH	 ESI
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 14
+video.asm
+
+
+
+1   742	00000669  FF 35	0000000Cr		 PUSH	 [FHOUTPUT]
+1   743	0000066F  E8 00000000e			 CALL	 DOSWRITE
+1   744	00000674  83 C4	10			 ADD	 ESP,00010h
+    745					 ; reset size to wIsoFrameLength
+    746	00000677  A1 00002018r		   mov eax,[wIsoFrameLength]
+    747	0000067C  66| 89 04 5F		   mov [word(edi+ebx*2)],ax
+    748					 ; loop	until all frames done
+    749	00000680  0F B7	0D 00010259r	   movzx ecx,[word(IsoParm+12)]
+    750	00000687  43			   inc ebx ; next frame	index
+    751	00000688  3B D9			   cmp ebx,ecx ; wIsoFrameCount
+    752	0000068A  73 22			   jnb QueueEmptyIsoBuffer ; done
+    753	0000068C  03 F0			   add esi,eax ; wIsoFrameLength
+    754	0000068E  EB C8			   jmp WriteIsochronousFrame
+    755	00000690			 label WriteStreamDataBytes near
+    756					 ; write to raw	iso data output	file
+    757	00000690  C1 E8	10		   shr eax,16 ;	buffer2length
+    758	00000693  01 05	00010263r	   add [RawBytesDone],eax ; total
+    759					   call	DosWrite c,[fhOutput],esi,eax,offset(BytesDone)
+1   760	00000699  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   761	0000069E  50				 PUSH	 EAX
+1   762	0000069F  56				 PUSH	 ESI
+1   763	000006A0  FF 35	0000000Cr		 PUSH	 [FHOUTPUT]
+1   764	000006A6  E8 00000000e			 CALL	 DOSWRITE
+1   765	000006AB  83 C4	10			 ADD	 ESP,00010h
+    766	000006AE			 label QueueEmptyIsoBuffer near
+    767					 ; queue empty isochronous buffer
+    768					   call	DosWrite c,1,offset(sInfo5),sInfo6-sInfo5,offset(BytesDone)
+1   769	000006AE  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   770	000006B3  6A 16				 PUSH	 SINFO6-SINFO5
+1   771	000006B5  68 000100CEr			 PUSH	 OFFSET(SINFO5)
+1   772	000006BA  6A 01				 PUSH	 1
+1   773	000006BC  E8 00000000e			 CALL	 DOSWRITE
+1   774	000006C1  83 C4	10			 ADD	 ESP,00010h
+    775					   call	DosDevIOCtl c,[fhDevice],0ECh,042h,0,0,0,0,0,0
+1   776	000006C4  6A 00				 PUSH	 0
+1   777	000006C6  6A 00				 PUSH	 0
+1   778	000006C8  6A 00				 PUSH	 0
+1   779	000006CA  6A 00				 PUSH	 0
+1   780	000006CC  6A 00				 PUSH	 0
+1   781	000006CE  6A 00				 PUSH	 0
+1   782	000006D0  6A 42				 PUSH	 042H
+1   783	000006D2  68 000000EC			 PUSH	 0ECH
+1   784	000006D7  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   785	000006DD  E8 00000000e			 CALL	 DOSDEVIOCTL
+1   786	000006E2  83 C4	24			 ADD	 ESP,00024h
+    787	000006E5  E8 0000011C		   call	ShowReturnCode
+    788					 ; update next iso buffer pointer
+    789	000006EA  81 05	0001025Fr     +	   add [IsoThis],iSize ; bump pointer
+    790		  00005555
+    791	000006F4  81 3D	0001025Fr     +	   cmp [IsoThis],offset(IsoData+tSize)
+    792		  0000FFFFr
+    793	000006FE  75 0A			   jne DecrementFreeBuffers ; proper
+    794	00000700  C7 05	0001025Fr     +	   mov [IsoThis],offset(IsoData)
+    795		  00000000r
+    796	0000070A			 label DecrementFreeBuffers near
+    797	0000070A  FF 0D	0001025Br	   dec [IsoFree] ; count
+    798	00000710  0F 85	FFFFFF06	   jnz ProcessRawIsoData
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 15
+video.asm
+
+
+
+    799					 ; stop	with enough raw	data
+    800	00000716  81 3D	00010263r     +	   cmp [RawBytesDone],tSize*15
+    801		  000EFFF1
+    802	00000720  0F 86	FFFFFEAD	   jna AwaitFilledIsoBuffers
+    803	00000726  C3			   ret ; return
+    804	00000727			 endp ProcessIsoStream
+    805
+    806	00000727			 codeseg
+    807	00000727			 proc chr2ddn near
+    808					 ; convert char	to ddname
+    809	00000727  33 F6			   xor esi,esi ; first position
+    810	00000729			 label UpdateDriverName	near
+    811	00000729  47			   inc edi ; next position
+    812	0000072A  8A 07			   mov al,[edi]	; obtain
+    813					 ; validate character
+    814	0000072C  3C 21			   cmp al,"!" ;	control
+    815	0000072E  72 34			   jb EndChr2ddn ; reject
+    816	00000730  3C 22			   cmp al,'"' ;	special
+    817	00000732  74 30			   je EndChr2ddn ; reject
+    818	00000734  3C 2A			   cmp al,"*" ;	special
+    819	00000736  74 2C			   je EndChr2ddn ; reject
+    820	00000738  3C 2E			   cmp al,"." ;	special
+    821	0000073A  74 28			   je EndChr2ddn ; reject
+    822	0000073C  3C 2F			   cmp al,"/" ;	special
+    823	0000073E  74 24			   je EndChr2ddn ; reject
+    824	00000740  3C 3A			   cmp al,":" ;	special
+    825	00000742  74 20			   je EndChr2ddn ; reject
+    826	00000744  3C 3C			   cmp al,"<" ;	special
+    827	00000746  74 1C			   je EndChr2ddn ; reject
+    828	00000748  3C 3E			   cmp al,">" ;	special
+    829	0000074A  74 18			   je EndChr2ddn ; reject
+    830	0000074C  3C 3F			   cmp al,"?" ;	special
+    831	0000074E  74 14			   je EndChr2ddn ; reject
+    832	00000750  3C 5C			   cmp al,"\" ;	special
+    833	00000752  74 10			   je EndChr2ddn ; reject
+    834	00000754  3C 7C			   cmp al,"|" ;	special
+    835	00000756  74 0C			   je EndChr2ddn ; reject
+    836					 ; update ddname character
+    837	00000758  88 86	00010005r	   mov [szDriver+esi],al
+    838	0000075E  46			   inc esi ; next position
+    839	0000075F  83 FE	08		   cmp esi,8 ; maximum
+    840	00000762  72 C5			   jb UpdateDriverName
+    841	00000764			 label EndChr2ddn near
+    842	00000764  C3			   ret ; return
+    843	00000765			 endp chr2ddn
+    844
+    845	00000765			 codeseg
+    846	00000765			 proc hex2bin near
+    847					 ; convert hex to binary
+    848	00000765  2B D2			   sub edx,edx ; output
+    849	00000767			 label ConvertInput near
+    850	00000767  47			   inc edi ; next position
+    851	00000768  8A 07			   mov al,[edi]	; digit
+    852					 ; convert decimal digit
+    853	0000076A  3C 30			   cmp al,"0" ;	minimum
+    854	0000076C  72 0D			   jb NotDecimal ; hex
+    855	0000076E  3C 39			   cmp al,"9" ;	maximum
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 16
+video.asm
+
+
+
+    856	00000770  77 09			   ja NotDecimal ; hex
+    857					 ; convert to binary
+    858	00000772  2C 30			   sub al,"0"-00h
+    859	00000774  C1 E2	04		   shl edx,4 ; output
+    860	00000777  32 D0			   xor dl,al ; insert
+    861	00000779  EB EC			   jmp ConvertInput
+    862	0000077B			 label NotDecimal near
+    863					 ; convert character
+    864	0000077B  3C 41			   cmp al,"A" ;	minimum
+    865	0000077D  72 0D			   jb EndHex2bin ; end
+    866	0000077F  3C 46			   cmp al,"F" ;	maximum
+    867	00000781  77 09			   ja EndHex2bin ; end
+    868					 ; convert to binary
+    869	00000783  2C 37			   sub al,"A"-0Ah
+    870	00000785  C1 E2	04		   shl edx,4 ; output
+    871	00000788  32 D0			   xor dl,al ; insert
+    872	0000078A  EB DB			   jmp ConvertInput
+    873	0000078C			 label EndHex2bin near
+    874	0000078C  C3			   ret ; return
+    875	0000078D			 endp hex2bin
+    876
+    877	0000078D			 codeseg
+    878	0000078D			 proc ProcessArguments near
+    879					 ; scan	for forward slash
+    880	0000078D  8A 07			   mov al,[edi]	; character
+    881	0000078F  47			   inc edi ; next position
+    882	00000790  3C 00			   cmp al,00h ;	terminator
+    883	00000792  74 71			   je EndScanString ; done
+    884	00000794  3C 2F			   cmp al,'/' ;	parameter
+    885	00000796  75 F5			   jne ProcessArguments
+    886					 ; parm	AlternateSetting
+    887	00000798  80 3F	61		   cmp [byte(edi)],'a'
+    888	0000079B  75 13			   jne NotAltSetting
+    889	0000079D  E8 FFFFFFC3		   call	hex2bin	; convert
+    890					 ; override bAlternateSetting
+    891	000007A2  88 15	00010247r	   mov [byte(SetInterface+2)],dl
+    892	000007A8  88 15	00010252r	   mov [byte(IsoParm+5)],dl
+    893	000007AE  EB DD			   jmp ProcessArguments
+    894	000007B0			 label NotAltSetting near
+    895					 ; parm	EndpointAddress
+    896	000007B0  80 3F	65		   cmp [byte(edi)],'e'
+    897	000007B3  75 0D			   jne NotEptAddress
+    898	000007B5  E8 FFFFFFAB		   call	hex2bin	; convert
+    899					 ; override bEndpointAddress
+    900	000007BA  88 15	00010251r	   mov [byte(IsoParm+4)],dl
+    901	000007C0  EB CB			   jmp ProcessArguments
+    902	000007C2			 label NotEptAddress near
+    903					 ; parm	IsoFrameCount
+    904	000007C2  80 3F	66		   cmp [byte(edi)],'f'
+    905	000007C5  75 0E			   jne NotFrameCount
+    906	000007C7  E8 FFFFFF99		   call	hex2bin	; convert
+    907					 ; override wIsoFrameCount
+    908	000007CC  66| 89 15 00010259r	   mov [word(IsoParm+12)],dx
+    909	000007D3  EB B8			   jmp ProcessArguments
+    910	000007D5			 label NotFrameCount near
+    911					 ; parm	InterfaceNumber
+    912	000007D5  80 3F	69		   cmp [byte(edi)],'i'
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 17
+video.asm
+
+
+
+    913	000007D8  75 0D			   jne NotIntfcNumber
+    914	000007DA  E8 FFFFFF86		   call	hex2bin	; convert
+    915					 ; override bInterfaceNumber
+    916	000007DF  88 15	00010249r	   mov [byte(SetInterface+4)],dl
+    917	000007E5  EB A6			   jmp ProcessArguments
+    918	000007E7			 label NotIntfcNumber near
+    919					 ; parm	DeviceDriverName
+    920	000007E7  80 3F	6E		   cmp [byte(edi)],'n'
+    921	000007EA  75 07			   jne NotDriverName
+    922	000007EC  E8 FFFFFF36		   call	chr2ddn	; update
+    923	000007F1  EB 9A			   jmp ProcessArguments
+    924	000007F3			 label NotDriverName near
+    925					 ; parm	bFormatIndex
+    926	000007F3  80 3F	78		   cmp [byte(edi)],'x'
+    927	000007F6  75 95			   jne ProcessArguments
+    928	000007F8  E8 FFFFFF68		   call	hex2bin	; convert
+    929					 ; override bFormatIndex
+    930	000007FD  88 15	000101E9r	   mov [SetNegotiate+10],dl
+    931	00000803  EB 88			   jmp ProcessArguments
+    932	00000805			 label EndScanString near
+    933					 ; skip	sanity checks
+    934	00000805  C3			   ret ; return
+    935	00000806			 endp ProcessArguments
+    936
+    937	00000806			 dataseg
+    938	00010267  30 31	32 33 34 35 36+	 hex2ascii db '0123456789ABCDEF'
+    939		  37 38	39 41 42 43 44+
+    940		  45 46
+    941
+    942	00010277			 dataseg
+    943	00010277  5B 3F	3F 3F 3F 3F 3F+	 szStatus db '[????????]',13,10
+    944		  3F 3F	5D 0D 0A
+    945
+    946	00010283			 codeseg
+    947	00000806			 proc ShowReturnCode near
+    948					 ; skip	zero return code
+    949	00000806  85 C0			   test	eax,eax	; zero
+    950	00000808  74 35			   jz EndShow ;	finished
+    951	0000080A  50			   push	eax ; save register
+    952					 ; convert return code
+    953	0000080B  B9 00000008		   mov ecx,8 ; code length
+    954	00000810			 label ConvertDigit near
+    955	00000810  8B D0			   mov edx,eax ; error code
+    956	00000812  83 E2	0F		   and edx,0000000Fh ; digit
+    957	00000815  8A 92	00010267r	   mov dl,[hex2ascii+edx]
+    958	0000081B  88 91	00010277r	   mov [szStatus+ecx],dl
+    959	00000821  C1 E8	04		   shr eax,4 ; next one
+    960	00000824  E2 EA			   loop	ConvertDigit
+    961					 ; show	appropriate info message
+    962					   call	DosWrite c,1,offset(szStatus),12,offset(BytesDone)
+1   963	00000826  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   964	0000082B  6A 0C				 PUSH	 12
+1   965	0000082D  68 00010277r			 PUSH	 OFFSET(SZSTATUS)
+1   966	00000832  6A 01				 PUSH	 1
+1   967	00000834  E8 00000000e			 CALL	 DOSWRITE
+1   968	00000839  83 C4	10			 ADD	 ESP,00010h
+    969	0000083C  58			   pop eax ; restore register
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 18
+video.asm
+
+
+
+    970	0000083D  85 C0			   test	eax,eax	; check
+    971	0000083F			 label EndShow near
+    972	0000083F  C3			   ret ; return
+    973	00000840			 endp ShowReturnCode
+    974
+    975					 end MainRoutine
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 19
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "12-10-13"
+??FILENAME			  Text	 "video	  "
+??TIME				  Text	 "18:39:00"
+??VERSION			  Number 0401
+@32BIT				  Text	 1
+@@ARG				  Number [FLAT:EBP+0014]
+@@ENV				  Number [FLAT:EBP+0010]
+@@MOD				  Number [FLAT:EBP+0008]
+@@NUL				  Number [FLAT:EBP+000C]
+@@REASONCODE			  Number [FLAT:EBP+0008]
+@CODE				  Text	 FLAT
+@CODESIZE			  Text	 0
+@CPU				  Text	 1F9FH
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 FLAT
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 VIDEO
+@INTERFACE			  Text	 00H
+@MODEL				  Text	 1
+@STACK				  Text	 FLAT
+@WORDSIZE			  Text	 4
+ACTIONTAKEN			  Dword	 FLAT:0000
+ADDMULTIPLIER			  Near	 FLAT:0191
+ASIZE				  Number 00010000
+AWAITFILLEDISOBUFFERS		  Near	 FLAT:05D3
+BADDOSOPENATTEMPT		  Near	 FLAT:03F3
+BADRAWOPENATTEMPT		  Near	 FLAT:041C
+BYTESDONE			  Dword	 FLAT:0004
+CHR2DDN				  Near	 FLAT:0727
+CONFIGDESCRIPTOR		  Byte	 FLAT:0018
+CONVERTDIGIT			  Near	 FLAT:0810
+CONVERTINPUT			  Near	 FLAT:0767
+DATALEN				  Dword	 FLAT:201C
+DECREMENTFREEBUFFERS		  Near	 FLAT:070A
+DOSCLOSE			  Near	 ----:---- Extern
+DOSCLOSEEVENTSEM		  Near	 ----:---- Extern
+DOSCREATEEVENTSEM		  Near	 ----:---- Extern
+DOSDEVIOCTL			  Near	 ----:---- Extern
+DOSEXIT				  Near	 ----:---- Extern
+DOSEXITLIST			  Near	 ----:---- Extern
+DOSOPEN				  Near	 ----:---- Extern
+DOSRESETEVENTSEM		  Near	 ----:---- Extern
+DOSSETPRIORITY			  Near	 ----:---- Extern
+DOSSLEEP			  Near	 ----:---- Extern
+DOSWAITEVENTSEM			  Near	 ----:---- Extern
+DOSWRITE			  Near	 ----:---- Extern
+ENDCHR2DDN			  Near	 FLAT:0764
+ENDHEX2BIN			  Near	 FLAT:078C
+ENDMULTIPLIER			  Near	 FLAT:0197
+ENDPROCESS			  Near	 FLAT:03C6
+ENDSCANSTRING			  Near	 FLAT:0805
+ENDSETFRAMESIZEARRAY		  Near	 FLAT:058F
+ENDSHOW				  Near	 FLAT:083F
+FHDEVICE			  Dword	 FLAT:0008
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 20
+Symbol Table
+
+
+
+FHOUTPUT			  Dword	 FLAT:000C
+FUSED				  Number 0000
+GETCONFIGDESCRIPTOR		  Dword	 FLAT:0010
+GETSUGGESTED			  Byte	 FLAT:00010201
+HEX2ASCII			  Byte	 FLAT:00010267
+HEX2BIN				  Near	 FLAT:0765
+ISIZE				  Number 5555
+ISODATA				  Byte	 FLAT:0000
+ISOFREE				  Dword	 FLAT:0001025B
+ISOPARM				  Dword	 FLAT:0001024D
+ISOPOST				  Dword	 FLAT:2020
+ISOTHIS				  Dword	 FLAT:0001025F
+IUSED				  Number 0003
+MAINROUTINE			  Near	 FLAT:0000
+MSIZE				  Number FFFF
+NEXTDESCRIPTOR			  Near	 FLAT:00F6
+NOTALTSETTING			  Near	 FLAT:07B0
+NOTDECIMAL			  Near	 FLAT:077B
+NOTDRIVERNAME			  Near	 FLAT:07F3
+NOTEPTADDRESS			  Near	 FLAT:07C2
+NOTFRAMECOUNT			  Near	 FLAT:07D5
+NOTINTFCNUMBER			  Near	 FLAT:07E7
+NOTISOOPENATTEMPT		  Near	 FLAT:03CA
+PARMLEN				  Dword	 FLAT:2024
+PROCESSARGUMENTS		  Near	 FLAT:078D
+PROCESSCOMPLETE			  Near	 FLAT:043E
+PROCESSISOSTREAM		  Near	 FLAT:056D
+PROCESSRAWISODATA		  Near	 FLAT:061C
+QUEUEEMPTYISOBUFFER		  Near	 FLAT:06AE
+QUEUEEMPTYISOBUFFERS		  Near	 FLAT:0572
+RAWBYTESDONE			  Dword	 FLAT:00010263
+SCANDESCRIPTORS			  Near	 FLAT:0105
+SCANINTERFACE			  Near	 FLAT:0140
+SETCONFIGURATION		  Byte	 FLAT:000101D7
+SETINTERFACE			  Byte	 FLAT:00010245
+SETNEGOTIATE			  Byte	 FLAT:000101DF
+SETSUGGESTED			  Byte	 FLAT:00010223
+SGOOD0				  Byte	 FLAT:00010018
+SGOOD1				  Byte	 FLAT:00010022
+SGOOD2				  Byte	 FLAT:0001002C
+SGOOD3				  Byte	 FLAT:00010038
+SGOOD4				  Byte	 FLAT:00010045
+SGOOD5				  Byte	 FLAT:00010052
+SHOWRETURNCODE			  Near	 FLAT:0806
+SINFO0				  Byte	 FLAT:00010052
+SINFO1				  Byte	 FLAT:00010067
+SINFO2				  Byte	 FLAT:0001007F
+SINFO3				  Byte	 FLAT:0001009D
+SINFO4				  Byte	 FLAT:000100B8
+SINFO5				  Byte	 FLAT:000100CE
+SINFO6				  Byte	 FLAT:000100E4
+SINFO7				  Byte	 FLAT:000100FA
+SINFO8				  Byte	 FLAT:00010114
+SINFO9				  Byte	 FLAT:00010132
+SINFOA				  Byte	 FLAT:00010147
+SINFOB				  Byte	 FLAT:00010153
+SINFOC				  Byte	 FLAT:0001015F
+Turbo Assembler	 Version 4.1	    12-10-13 18:39:00	    Page 21
+Symbol Table
+
+
+
+SINFOD				  Byte	 FLAT:00010169
+SINFOP				  Byte	 FLAT:00010169
+SINFOQ				  Byte	 FLAT:0001017F
+SINFOR				  Byte	 FLAT:00010195
+SINFOS				  Byte	 FLAT:000101AF
+STEST0				  Byte	 FLAT:000101AF
+STEST1				  Byte	 FLAT:000101C3
+STEST2				  Byte	 FLAT:000101D7
+SZDEVICE			  Byte	 FLAT:00010000
+SZDRIVER			  Byte	 FLAT:00010005
+SZOUTPUT			  Byte	 FLAT:0001000E
+SZSTATUS			  Byte	 FLAT:00010277
+TSIZE				  Number FFFF
+UPDATEDRIVERNAME		  Near	 FLAT:0729
+WISOFRAMELENGTH			  Dword	 FLAT:2018
+WRITEISOCHRONOUSFRAME		  Near	 FLAT:0658
+WRITESTREAMDATABYTES		  Near	 FLAT:0690
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  STACK				  32  2000 Para	  Stack	  STACK
+  _BSS				  32  2028 Dword  Public  BSS
+  _DATA				  32  00010283 Dword  Public  DATA
+FLAT				  Group
+_TEXT				  32  0840 Dword  Public  CODE
+

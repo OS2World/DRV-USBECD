@@ -1,0 +1,533 @@
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD20.ZIP ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ Provides a device driver to directly control classless usb devices attached
+ to an OS/2 system. Has been specifically designed to ease the development and
+ test of simple homemade usb devices under OS/2. Uses standard/vendor control
+ transfers and data (bulk/interrupt) transfers. The hybrid control interface
+ supports isochronous transfers with 1 endpoint. Made in Holland by Wim Brul.
+
+ Consists of USBECD.TXT (this text file), USBECD.SYS (the device driver),
+ USBREAD.CMD (the inquiry) and USBWRITE.CMD (a direct control example).
+
+ May be freely used and exchanged, as long as it is not modified. You may
+ use this product solely at your own risk. I cannot be held responsible for
+ any damages occurring due to your using this product. You may not lease,
+ rent or sell this product to any other party. Have fun.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ This driver enables you to directly control usb devices. It provides an
+ application programming interface that conforms to the standard DosRead and
+ DosWrite functions and as such may be easily used from REXX procedures using
+ the charin and charout functions. It has been designed to ease the development
+ and test of simple usb devices that do not belong to any usb device class and
+ which exercise standard/vendor control transfers and data (bulk/interrupt)
+ transfers. There is a one to one relationship between an instance of this
+ device driver and a particular usb device. The additional hybrid control
+ interface supports isochronous transfers with one specific endpoint through
+ DosDevIOCtl functions that are however not available to REXX procedures.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Installation ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ Move the USBECD20.ZIP file into a directory of your choice and unzip it.
+ Copy the USBECD.SYS file to your C:\OS2\BOOT\ directory. Add the device
+ driver to the CONFIG.SYS file with the DEVICE=C:\OS2\BOOT\USBECD.SYS
+ statement and restart your system. Attach the usb device that you want to
+ control and it will be accepted by the device driver for inquiry via the
+ DosRead function. Run the USBREAD.CMD file and it will obtain and display
+ the device descriptor of the attached usb device and the device driver
+ parameters required to control it with the DosWrite function. Update the
+ device driver statement in the CONFIG.SYS accordingly and restart your
+ system. Run the USBWRITE.CMD file and here is where the fun starts.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Device Driver Parameters ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ DEVICE=USBECD.SYS /D:0000:0000:0000 /N:$$$$$$$$ /S /V
+
+ You may use several instances of this device driver for various usb devices.
+ All of these instances need to have a different device driver name specified.
+
+ CAUTION: Make sure that the device driver name is unique. It must be different
+ =======  from all file, directory and driver names throughout your system.
+
+ The default device driver name becomes $ when no name has been specified and
+ this may only be used for the last of these instances.
+
+ All parameters need to be in upper case.
+
+ /D:0000:0000:0000 - Device, specifies the usb device for this driver.
+                     The 1st part is idVendor, the Vendor Identification.
+                     The 2nd part is idProduct, the Product Identification.
+                     The 3rd part is bcdDevice, the Device Release Number.
+                     Must be specified with valid hexadecimal digits.
+                     The wildcard character # may be specified too.
+
+ /N:$$$$$$$$ - Name, specifies the device driver name for this driver.
+               Must be a valid device driver name that is unique. It must be
+               different from all file, directory and driver names throughout
+               your system. The driver accepts the file name characters used
+               by the HPFS file system but not the space and dot characters.
+
+ /S - Silence Mode, disables driver audible alarm.
+      The default is audible alarm enabled and the driver produces
+      a sharp beep as an attach/detach device alert.
+
+ /V - Verbose Mode, enables driver information.
+      Displays driver information during OS/2 initialization.
+      The default is no driver information displayed.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ USBREAD.CMD ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ usbread sName
+
+ Attach the usb device that you want to inspect and it will be accepted by all
+ instances of the device driver for inquiry via the DosRead function. Run the
+ usbread.cmd file and it will obtain and display the device descriptor of the
+ last attached usb device and the device driver parameters required to control
+ that usb device with the DosWrite function.
+
+ sName - Name of the device driver to be used. This is an optional argument
+         and the name will default to $ when no name has been specified.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ USBWRITE.CMD ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ usbwrite sName
+
+ Attach the usb device that you want to control and it will be accepted by
+ the associated device driver instance for control by the DosWrite function.
+ You may associate a particular device driver instance to the usb device that
+ you want to control by means of the proper device driver parameters. Run the
+ usbwrite.cmd file to obtain and display the device descriptor, configuration
+ descriptors and associated interface and endpoint descriptors.
+
+ sName - Name of the device driver to be used. This is an optional argument
+         and the name will default to $ when no name has been specified.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Control/Data Transfers ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ Control Transfers are supported by all usb devices through the default control
+ pipe (the one with endpoint address zero). Most usb devices require the device
+ to be configured before its Data Transfer endpoints can be used. Be aware that
+ the usbecd.sys device driver does not issue a SetConfiguration request during
+ attach of the associated usb device. It is up to the application to do this.
+
+ The distinction between the parameter packet used by the data (bulk/interrupt)
+ transfers and the setup packet used by the control transfers is based upon the
+ contents of the bmRequestType field. The reserved value of 0xEC specifies that
+ the packet is a parameter packet. Otherwise it is a setup packet.
+
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+ ³            field ³ description       ³ ³         field ³ description       ³
+ ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+ ³    bmRequestType ³ {0xEC} parameter  ³ ³ bmRequestType ³ characteristics   ³
+ ³         bmToggle ³ {0/8} data toggle ³ ³      bRequest ³ specific request  ³
+ ³      wTimeOut[0] ³ timeout interval  ³ ³     wValue[0] ³ request dependent ³
+ ³      wTimeOut[1] ³ timeout interval  ³ ³     wValue[1] ³ request dependent ³
+ ³ bEndpointAddress ³ endpoint address  ³ ³     wIndex[0] ³ request dependent ³
+ ³     bmAttributes ³ transfer type     ³ ³     wIndex[1] ³ request dependent ³
+ ³       wLength[0] ³ data length       ³ ³    wLength[0] ³ data length       ³
+ ³       wLength[1] ³ data Length       ³ ³    wLength[1] ³ data length       ³
+ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+           Parameter Packet                          Setup Packet
+
+ The bEndpointAddress field and the bmAttributes field of the parameter packet
+ must be filled from the same fields of the corresponding endpoint descriptor.
+
+ The bmToggle field supplies the initial data toggle to the device driver and
+ receives the updated data toggle from the device driver. Since the usbecd.sys
+ device driver does not keep track of the data toggle state between successive
+ DosWrite requests to a particular endpoint, that data toggle must be carried
+ forward by the application from the last DosWrite into the next DosWrite for
+ that particular endpoint.
+
+ The wTimeOut field defines the maximum waiting time in milliseconds for the
+ data transfer to complete. The special value 0xFFFF waits forever. The former
+ reserved value {0} waits 4096 milliseconds to provide backward compatibility.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Direct Control Interface ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ The direct control interface uses OS/2 Procedures language 2/REXX functions.
+ To control the usb device the following functions are described:
+
+ ş Acquire Driver
+ ş Obtain Device Descriptor
+ ş Execute Control Transfer
+ ş Execute Data Transfer
+ ş Release Driver
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Acquire Driver ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ rc=stream(sName,'command','open');
+
+ Opens the device driver with read/write access for this process and denies
+ read/write access to all other processes as required by the device driver.
+ The device driver relies on standard file system access and sharing rules
+ for contention control and does not use the notification of the open.
+
+ sName - Name of the usb device driver to be opened.
+
+ rc - Return Code. See the OS/2 Procedures Language 2/REXX Online Reference
+      for the standard strings returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Obtain Device Descriptor ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ Buffer=charin(sName,,26);
+
+ Builds the setup packet to obtain the device descriptor. Transmits the setup
+ packet to the usb device. Receives the device descriptor from the usb device.
+ The last attached usb device will be used rather than the associated device.
+
+ sName - Name of the usb device driver to be used.
+
+ sBuffer - Name of the buffer to receive the setup packet
+           and the device descriptor.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Execute Control Transfer ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ rc=charout(sName,sBuffer);
+
+ Transmits the setup packet to the associated usb device.
+ Transmits the number of bytes specified in the wLength field of the setup
+ packet to that usb device when the data transfer direction specified in
+ the bmRequestType field of the setup packet is host-to-device.
+ Receives the number of bytes specified in the wLength field of the setup
+ packet from that usb device when the data transfer direction specified
+ in the bmRequestType field of the setup packet is device-to-host.
+
+ sName - Name of the usb device driver to be used.
+
+ sBuffer - Name of the buffer that contains the setup packet in its
+           first eight bytes. For host-to-device transfers the data bytes
+           to be transmitted will be taken from the remainder of this buffer.
+           For device-to-host transfers the data bytes to be received will
+           be put into the remainder of this buffer.
+
+ rc - Return Code. See the OS/2 Procedures Language 2/REXX Online Reference
+      for the standard strings returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Execute Data Transfer ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ rc=charout(sName,sBuffer);
+
+ Transmits the number of bytes specified in the wLength field of the parameter
+ packet to the associated usb device when the data transfer direction specified
+ in the bEndpointAddress field of the parameter packet is host-to-device.
+ Receives the number of bytes specified in the wLength field of the parameter
+ packet from that usb device when the data transfer direction specified in
+ the bmEndpointAddress field of the parameter packet is device-to-host.
+
+ sName - Name of the usb device driver to be used.
+
+ sBuffer - Name of the buffer that contains the parameter packet in its
+           first eight bytes. For host-to-device transfers the data bytes
+           to be transmitted will be taken from the remainder of this buffer.
+           For device-to-host transfers the data bytes to be received will
+           be put into the remainder of this buffer.
+
+ rc - Return Code. See the OS/2 Procedures Language 2/REXX Online Reference
+      for the standard strings returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Release Driver ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ rc=stream(sName,'command','close');
+
+ Closes the device driver and allows read/write access to other processes.
+ The device driver relies on standard file system access and sharing rules
+ for contention control and does not use the notification of the close.
+
+ sName - Name of the usb device driver to be closed.
+
+ rc - Return Code. See the OS/2 Procedures Language 2/REXX Online Reference
+      for the standard strings returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Isochronous Transfers ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ For the Isochronous Open Request the Parameter Buffer must be set as follows:
+
+ The hEventSem field must be filled with the handle of an unnamed shared event
+ semaphore from a previous call to DosCreateEventSem. When an Isochronous Queue
+ Request completes, this semaphore will be posted. The bEndpointAddress field
+ must be copied from bEndpointAddress of the corresponding endpoint descriptor.
+ The bAlternateSetting value must be taken from the bAlternateSetting of the
+|corresponding interface descriptor. The wMaxPacketSize value must be copied
+ from the wMaxPacketSize field of the corresponding endpoint descriptor.
+ The wIsoBufferLength and wIsoBufferCount values must be set such that
+ wIsoBufferLength*wIsoBufferCount bytes fit within the data buffer.
+
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+ ³             field ³ description            ³
+ ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+ ³         hEventSem ³ event semaphore handle ³
+ ³  bEndpointAddress ³ endpoint address       ³
+ ³ bAlternateSetting ³ alternative setting    ³
+|³    wMaxPacketSize ³ maximum payload size   ³
+ ³  wIsoBufferLength ³ size of one iso buffer ³
+ ³   wIsoBufferCount ³ number of iso buffers  ³
+ ³    wIsoFrameCount ³ number of iso frames   ³
+ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+                Parameter Buffer
+
+|Set wIsoFrameLength to (wMaxPacketSize&7FF)*(((wMaxPacketSize&0x1800)>>11)+1).
+
+ Set wIsoFrameCount to (wIsoBufferLength-4)/(wIsoFrameLength+2) to transfer
+ individual frames. The data area in each iso buffer starts with a frame data
+ array and ends with a frame size array. Each array has wIsoFrameCount elements.
+ Otherwise the data area in each iso buffer contains concatenated payload(s).
+
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+ ³ data area  ³ completion result fields      ³
+ ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+ ³ payload(s) ³ buffer1Length ³ buffer2Length ³
+ ³ .          ³ .             ³ .             ³
+ ³ payload(s) ³ buffer1Length ³ buffer2Length ³
+ ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+              Data Buffer (stream)
+
+ The data buffer must be aligned at a 65536 byte boundary.
+ The number of contiguous iso buffers in this data buffer is wIsoBufferCount.
+ When an Isochronous Queue Request completes and frames are not used, then
+ buffer1Length contains the size of the data area (wIsoBufferLength-4)
+ and buffer2Length contains the number of bytes transferred.
+
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+ ³ data area     ³ completion result fields      ³
+ ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+ ³ data[],size[] ³ buffer1Length ³ buffer2Length ³
+ ³ .             ³ .             ³ .             ³
+ ³ data[],size[] ³ buffer1Length ³ buffer2Length ³
+ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+                Data Buffer (frames)
+
+ When an Isochronous Queue Request is issued and frames are being used then
+ the frame size array in the iso buffer must always have been prepared by
+ resetting each element to wIsoFrameLength.
+
+ When an Isochronous Queue Request completes and frames are being used then
+ buffer1Length contains the offset to the frame size array and buffer2Length
+ contains the size of the frame size array (wIsoFrameCount*2). The frame data
+ array contains the individual frames and the frame size array contains the
+ corresponding lengths.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Hybrid Control Interface ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ The hybrid control interface uses DosDevIOCtl functions.
+ To control the usb device the following functions are described:
+
+ ş Isochronous Open Request
+ ş Isochronous Queue Request
+ ş Isochronous Close Request
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Isochronous Open Request ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosDevIOCtl(hDevice,0xEC,0x40,pParm,cbParm,pcbParm,pData,cbData,pcbData);
+
+ Locks the data buffer in memory. Allocates resources for isochronous transfer.
+
+ hDevice - The device handle obtained from a previous call to DosOpen.
+
+ pParm - Parameter Buffer Address. The parameter buffer contains the
+         appropriate parameters to enable isochronous transfers.
+
+ cbParm - Parameter Buffer Length. Must be 14 when the optional field
+          wIsoFrameCount in the Parameter Buffer has been specified.
+          Otherwise it must be 12.
+
+ pcbParm - Address of the variable to receive the Parameter Buffer Length.
+
+ pData - Data Buffer Address. The data buffer contains the isochronous buffers.
+         It must be aligned at a 65536 bytes boundary.
+
+ cbData - Data Buffer Length. Must be at least wIsoBufferLength*wIsoBufferCount.
+
+ pcbData - Address of the variable to receive the Data Buffer Length.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Isochronous Queue Request ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosDevIOCtl(hDevice,0xEC,0x42,0,0,0,0,0,0);
+
+ Schedules one iso buffer for transfer. Prepares for next transfer.
+ Upon isochronous transfer complete, the EventSem will be posted.
+
+ When frames are being used then the frame size array in the iso buffer
+ must always be prepared by resetting each element to wIsoFrameLength.
+
+ hDevice - The device handle obtained from a previous call to DosOpen.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Isochronous Close Request ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosDevIOCtl(hDevice,0xEC,0x41,0,0,0,0,0,0);
+
+ Releases resources for isochronous transfer. Unlocks the data buffer in memory.
+
+ hDevice - The device handle obtained from a previous call to DosOpen.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Application Programming Interface ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ The application program interface uses OS/2 Control Program functions.
+ To control the usb device the following functions are described:
+
+ ş DosOpen
+ ş DosRead
+ ş DosWrite
+ ş DosClose
+
+ÚÄÄÄÄÄÄÄÄÄ¿
+³ DosOpen ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosOpen(pszName,phDevice,pulAction,0,0,1,18,0);
+
+ Opens the device driver with read/write access for this process and denies
+ read/write access to all other processes as required by the device driver.
+ The device driver relies on standard file system access and sharing rules
+ for contention control and does not use the notification of the open.
+
+ pszName - Address of the asciiz name of the usb device driver to be opened.
+
+ phDevice - Address of the variable to receive the device handle.
+
+ pulAction - Address of the variable to receive the action taken.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+
+ÚÄÄÄÄÄÄÄÄÄ¿
+³ DosRead ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosRead(hDevice,pBuffer,cbTransfer,pcbTransfer);
+
+ Builds the setup packet to obtain the device descriptor. Transmits the setup
+ packet to the usb device. Receives the device descriptor from the usb device.
+ The last attached usb device will be used rather than the associated device.
+
+ hDevice - The device handle obtained from a previous call to DosOpen.
+
+ pBuffer - Address of the buffer to receive the setup packet
+           and the device descriptor.
+
+ cbTransfer - Number of bytes to transfer. The size of the setup
+              packet is 8. The size of the device descriptor is 18.
+              Thus the cbTransfer field must be at least 26.
+
+ pcbTransfer - Address of the variable to receive the number of bytes
+               transferred. Beware of the fact that this becomes just a
+               copy of the cbTransfer field. The number of bytes actually
+               received in the data stage is put into the wLenght field
+               of the setup packet rather than into this field.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄ¿
+³ DosWrite ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosWrite(hDevice,pBuffer,cbTransfer,pcbTransfer);
+
+ In case of control (standard/vendor) transfer:
+
+ Transmits the setup packet to the associated usb device.
+ Transmits the number of bytes specified in the wLength field of the setup
+ packet to that usb device when the data transfer direction specified in
+ the bmRequestType field of the setup packet is host-to-device.
+ Receives the number of bytes specified in the wLength field of the setup
+ packet from that usb device when the data transfer direction specified
+ in the bmRequestType field of the setup packet is device-to-host.
+
+ In case of data (bulk/interrupt) transfer:
+
+ Transmits the number of bytes specified in the wLength field of the parameter
+ packet to the associated usb device when the data transfer direction specified
+ in the bEndpointAddress field of the parameter packet is host-to-device.
+ Receives the number of bytes specified in the wLength field of the parameter
+ packet from that usb device when the data transfer direction specified in
+ the bmEndpointAddress field of the parameter packet is device-to-host.
+
+ hDevice - The device handle obtained from a previous call to DosOpen.
+
+ pBuffer - Address of the buffer that contains the parameter/setup packet in
+           its first eight bytes. For host-to-device transfers the data bytes
+           to be transmitted will be taken from the remainder of this buffer.
+           For device-to-host transfers the data bytes to be received will
+           be put into the remainder of this buffer.
+
+ cbTransfer - Number of bytes to transfer. At least the parameter/setup
+              packet must be present in the buffer, so the minimum number
+              of bytes to transfer must be 8. For data transfers the actual
+              number of bytes to be transferred is controlled by the wLength
+              field of the parameter/setup packet. Thus the number of bytes
+              to transfer must be at least 8 higher than the wLength field
+              of the parameter/setup packet.
+
+ pcbTransfer - Address of the variable to receive the number of bytes
+               transferred. Beware of the fact that this becomes just a
+               copy of the cbTransfer field. The number of bytes actually
+               transferred in the data stage is put into the wLenght field
+               of the setup packet rather than into this field.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+
+ÚÄÄÄÄÄÄÄÄÄÄ¿
+³ DosClose ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ÀÄÄÄÄÄÄÄÄÄÄÙ
+
+ ulrc=DosClose(hDevice);
+
+ Closes the device driver and allows read/write access to other processes.
+ The device driver relies on standard file system access and sharing rules
+ for contention control and does not use the notification of the close.
+
+ hDevice - The device handle obtained from a previous call to DosOpen.
+
+ ulrc - Return Code. See the Control Program Guide and Reference
+        for the standard values returned.
+

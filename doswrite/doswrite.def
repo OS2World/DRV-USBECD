@@ -1,0 +1,4 @@
+name DOSWRITE windowcompat
+description 'DOSWRITE.EXE, Copyright (C)2005-2011, W.M.Brul, NL1422CG25.'
+protmode
+stacksize 4096

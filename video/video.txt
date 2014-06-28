@@ -1,0 +1,26 @@
+-------------------------------------------------------------------------------
+video.exe - Obtain Video Stream Test Program
+-------------------------------------------------------------------------------
+
+This test application demonstrates how the OS/2 Control Program functions
+DosOpen, DosWrite, DosDevIOCtl and DosClose should be used to properly obtain
+isochronous video data using isochronous transfers. It may be interrupted by
+hitting the Ctrl+Break or Ctrl+C keys. Invokation could be done as follows:
+
+video /a5 /e81 /f18 /i1 /n$LTC250$ /x2
+
+/a5 sets bAlternateSetting to 0x05.
+/e81 sets bEndpointAddress to 0x81.
+/f18 sets wIsoFrameCount to 0x0018.
+/i1 sets bInterfaceNumber to 0x01.
+/n$LTC250$ sets szName to $LTC250$.
+/x2 sets bFormatIndex to 0x02.
+
+All arguments are optional and case sensitive.
+An invalid character truncates the argument value.
+The sequence of the arguments is not important.
+
+Defaults are shown below:
+
+video /a0 /e0 /f0 /i0 /n$ /x0
+

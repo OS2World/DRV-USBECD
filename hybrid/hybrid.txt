@@ -1,0 +1,25 @@
+-------------------------------------------------------------------------------
+hybrid.exe - Hybrid Control Interface Test Program
+-------------------------------------------------------------------------------
+
+This test application demonstrates how the OS/2 Control Program functions
+DosOpen, DosWrite, DosDevIOCtl and DosClose should be used to exercise the
+Isochronous Open and Close Requests. It may be interrupted by hitting the
+Ctrl+Break or Ctrl+C keys. Invokation could be done as follows:
+
+hybrid /a8 /e81 /fA /i0 /nSNX$
+
+/a8 sets bAlternateSetting to 0x08.
+/e81 sets bEndpointAddress to 0x81.
+/fA sets wIsoFrameCount to 0x000A.
+/i0 sets bInterfaceNumber to 0x00.
+/nSNX$ sets szName to SNX$.
+
+All arguments are optional and case sensitive.
+An invalid character truncates the argument value.
+The sequence of the arguments is not important.
+
+Defaults are shown below:
+
+hybrid /a0 /e0 /f0 /i0 /n$
+

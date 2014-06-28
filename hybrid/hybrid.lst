@@ -1,0 +1,820 @@
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 1
+hybrid.asm
+
+
+
+      1					 .486p
+      2	00000000			 model flat
+      3					 ideal
+      4
+      5					 extrn DosClose:near
+      6					 extrn DosCloseEventSem:near
+      7					 extrn DosCreateEventSem:near
+      8					 extrn DosDevIOCtl:near
+      9					 extrn DosExit:near
+     10					 extrn DosExitList:near
+     11					 extrn DosOpen:near
+     12					 extrn DosSleep:near
+     13					 extrn DosWrite:near
+     14
+     15	00000000			 stack 8192
+     16
+     17	00002000			 dataseg ; must	be first
+     18					 ; define isochronous buffers
+     19		  =00010000		 aSize=65536 ; maximum value
+     20		  =FFFF			 mSize=65535 ; maximum value
+     21	00000000  010000*(00)		 IsoData db aSize dup(0)
+     22		  =0003			 iUsed=3 ; number of buffers
+     23		  =5555			 iSize=mSize/iUsed ; buffer size
+     24		  =FFFF			 tSize=iSize*iUsed ; total size
+     25		  =0000			 fUsed=0 ; number of frames
+     26
+     27	00010000			 dataseg
+     28	00010000  5C 44	45 56 5C	 szDevice db '\DEV\'
+     29	00010005  24 00	00 00 00 00 00+	 szDriver db '$',0,0,0,0,0,0,0,0
+     30		  00 00
+     31
+     32	0001000E			 dataseg
+     33	0001000E  73 74	61 72 74 65 64+	 sGood0	db 'started.',13,10
+     34		  2E 0D	0A
+     35	00010018  73 74	6F 70 70 65 64+	 sGood1	db 'stopped.',13,10
+     36		  2E 0D	0A
+     37	00010022  77 61	69 74 69 6E 67+	 sGood2	db 'waiting...',13,10
+     38		  2E 2E	2E 0D 0A
+     39	0001002E  61 77	61 69 74 69 6E+	 sGood3	db 'awaiting...',13,10
+     40		  67 2E	2E 2E 0D 0A
+     41	0001003B  71 75	69 74 74 69 6E+	 sGood4	db 'quitting...',13,10
+     42		  67 2E	2E 2E 0D 0A
+     43	00010048			 label sGood5 byte
+     44
+     45	00010048			 dataseg
+     46	00010048  20 6F	70 65 6E 69 6E+	 sInfo0	db ' opening usbecd.sys',13,10
+     47		  67 20	75 73 62 65 63+
+     48		  64 2E	73 79 73 0D 0A
+     49	0001005D  20 73	65 74 74 69 6E+	 sInfo1	db ' setting configuration',13,10
+     50		  67 20	63 6F 6E 66 69+
+     51		  67 75	72 61 74 69 6F+
+     52		  6E 0D	0A
+     53	00010075  20 73	65 74 74 69 6E+	 sInfo2	db ' setting alternate interface',13,10
+     54		  67 20	61 6C 74 65 72+
+     55		  6E 61	74 65 20 69 6E+
+     56		  74 65	72 66 61 63 65+
+     57		  0D 0A
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 2
+hybrid.asm
+
+
+
+     58	00010093  20 63	72 65 61 74 69+	 sInfo3	db ' creating event semaphore',13,10
+     59		  6E 67	20 65 76 65 6E+
+     60		  74 20	73 65 6D 61 70+
+     61		  68 6F	72 65 0D 0A
+     62	000100AE  20 6F	70 65 6E 69 6E+	 sInfo4	db ' opening isochronous',13,10
+     63		  67 20	69 73 6F 63 68+
+     64		  72 6F	6E 6F 75 73 0D+
+     65		  0A
+     66	000100C4  20 71	75 65 75 69 6E+	 sInfo5	db ' queuing isochronous',13,10
+     67		  67 20	69 73 6F 63 68+
+     68		  72 6F	6E 6F 75 73 0D+
+     69		  0A
+     70	000100DA  20 63	6C 6F 73 69 6E+	 sInfo6	db ' closing isochronous',13,10
+     71		  67 20	69 73 6F 63 68+
+     72		  72 6F	6E 6F 75 73 0D+
+     73		  0A
+     74	000100F0  20 63	6C 6F 73 69 6E+	 sInfo7	db ' closing event semaphore',13,10
+     75		  67 20	65 76 65 6E 74+
+     76		  20 73	65 6D 61 70 68+
+     77		  6F 72	65 0D 0A
+     78	0001010A  20 72	65 73 65 74 74+	 sInfo8	db ' resetting default interface',13,10
+     79		  69 6E	67 20 64 65 66+
+     80		  61 75	6C 74 20 69 6E+
+     81		  74 65	72 66 61 63 65+
+     82		  0D 0A
+     83	00010128  20 63	6C 6F 73 69 6E+	 sInfo9	db ' closing usbecd.sys',13,10
+     84		  67 20	75 73 62 65 63+
+     85		  64 2E	73 79 73 0D 0A
+     86	0001013D  20 64	65 73 63 72 69+	 sInfoA	db ' descriptor:'
+     87		  70 74	6F 72 3A
+     88	00010149  20 70	61 72 61 6D 65+	 sInfoB	db ' parameters:'
+     89		  74 65	72 73 3A
+     90	00010155  20 63	6F 6D 70 6C 65+	 sInfoC	db ' complete:'
+     91		  74 65	3A
+     92	0001015F			 label sInfoD byte
+     93
+     94	0001015F			 udataseg
+     95	00000000  ????????		 ActionTaken dd	?
+     96	00000004  ????????		 BytesDone dd ?
+     97	00000008  ????????		 fhDevice dd ?
+     98
+     99	0000000C			 udataseg
+    100	0000000C  02*(????????)		 GetConfigDescriptor dd	2 dup(?)
+    101	00000014  2000*(??)		 ConfigDescriptor db 8192 dup(?)
+    102
+    103	00002014			 dataseg
+    104	0001015F  00 09	01 00 00 00 00+	 SetConfiguration db 00h,09h,01h,00h,00h,00h,00h,00h
+    105		  00
+    106
+    107	00010167			 dataseg
+    108	00010167  01 0B	00 00 00 00 00+	 SetInterface db 01h,0Bh,00h,00h,00h,00h,00h,00h
+    109		  00
+    110
+    111	0001016F			 dataseg
+    112					 ; parameter buffer
+    113	0001016F  00000000		 IsoParm dd 0 ;	hEventSem
+    114	00010173  00			   db 00h ; bEndpointAddress
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 3
+hybrid.asm
+
+
+
+    115	00010174  00			   db 00h ; bAlternateSetting
+    116	00010175  0000			   dw 0000h ; wIsoFrameLength
+    117	00010177  5555			   dw iSize ; wIsoBufferLength
+    118	00010179  0003			   dw iUsed ; wIsoBufferCount
+    119	0001017B  0000			   dw fUsed ; wIsoFrameCount
+    120
+    121	0001017D			 udataseg
+    122	00002014  ????????		 DataLen dd ?
+    123	00002018  ????????		 ParmLen dd ?
+    124
+    125	0000201C			 codeseg
+    126	00000000			 proc MainRoutine c near
+    127					 arg @@Mod,@@Nul,@@Env,@@Arg
+    128					 ; determine begin of arguments
+1   129	00000000  C8 0000 00			 ENTERD	 00000h,0
+1   130	00000004  FC			   cld ; operate foreward scan
+    131	00000005  B9 00000200		   mov ecx,512 ; max scan length
+    132	0000000A  8B 7D	14		   mov edi,[@@Arg] ; start address
+    133	0000000D  F2> AE		   repne scasb ; find terminator
+    134					 ; process passed arguments
+    135	0000000F  E8 0000043D		   call	ProcessArguments
+    136					 ; show	application started message
+    137					   call	DosWrite c,1,offset(sGood0),sGood1-sGood0,offset(BytesDone)
+1   138	00000014  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   139	00000019  6A 0A				 PUSH	 SGOOD1-SGOOD0
+1   140	0000001B  68 0001000Er			 PUSH	 OFFSET(SGOOD0)
+1   141	00000020  6A 01				 PUSH	 1
+1   142	00000022  E8 00000000e			 CALL	 DOSWRITE
+1   143	00000027  83 C4	10			 ADD	 ESP,00010h
+    144					 ; open	usb stream device driver
+    145					   call	DosWrite c,1,offset(sInfo0),sInfo1-sInfo0,offset(BytesDone)
+1   146	0000002A  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   147	0000002F  6A 15				 PUSH	 SINFO1-SINFO0
+1   148	00000031  68 00010048r			 PUSH	 OFFSET(SINFO0)
+1   149	00000036  6A 01				 PUSH	 1
+1   150	00000038  E8 00000000e			 CALL	 DOSWRITE
+1   151	0000003D  83 C4	10			 ADD	 ESP,00010h
+    152					   call	DosOpen	c,offset(szDevice),offset(fhDevice),offset(ActionTaken),0,0,1,18,0
+1   153	00000040  6A 00				 PUSH	 0
+1   154	00000042  6A 12				 PUSH	 18
+1   155	00000044  6A 01				 PUSH	 1
+1   156	00000046  6A 00				 PUSH	 0
+1   157	00000048  6A 00				 PUSH	 0
+1   158	0000004A  68 00000000r			 PUSH	 OFFSET(ACTIONTAKEN)
+1   159	0000004F  68 00000008r			 PUSH	 OFFSET(FHDEVICE)
+1   160	00000054  68 00010000r			 PUSH	 OFFSET(SZDEVICE)
+1   161	00000059  E8 00000000e			 CALL	 DOSOPEN
+1   162	0000005E  83 C4	20			 ADD	 ESP,00020h
+    163	00000061  E8 00000452		   call	ShowReturnCode
+    164	00000066  0F 85	00000257	   jnz BadDosOpenAttempt
+    165					 ; obtain 1st configuration descriptor
+    166	0000006C  C7 05	0000000Cr     +	   mov [GetConfigDescriptor+0],02000680h
+    167		  02000680
+    168	00000076  C7 05	00000010r     +	   mov [GetConfigDescriptor+4],20000000h
+    169		  20000000
+    170					   call	DosWrite c,[fhDevice],offset(GetConfigDescriptor),8192+8,offset(BytesDone)
+1   171	00000080  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 4
+hybrid.asm
+
+
+
+1   172	00000085  68 00002008			 PUSH	 8192+8
+1   173	0000008A  68 0000000Cr			 PUSH	 OFFSET(GETCONFIGDESCRIPTOR)
+1   174	0000008F  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   175	00000095  E8 00000000e			 CALL	 DOSWRITE
+1   176	0000009A  83 C4	10			 ADD	 ESP,00010h
+    177	0000009D  E8 00000416		   call	ShowReturnCode
+    178	000000A2  0F 85	000001F2	   jnz NotIsoOpenAttempt
+    179					 ; fix isochronous open	arguments
+    180	000000A8  BE 00000014r		   mov esi,offset(ConfigDescriptor)
+    181					 ; get total descriptor	size
+    182	000000AD  0F B7	5E 02		   movzx ebx,[word(esi+2)]
+    183	000000B1			 label NextDescriptor near
+    184					 ; point to next descriptor
+    185	000000B1  25 000000FF		   and eax,0FFh	; length
+    186	000000B6  03 F0			   add esi,eax ; next
+    187	000000B8  2B D8			   sub ebx,eax ; next
+    188	000000BA  0F 86	000001DA	   jna NotIsoOpenAttempt
+    189	000000C0			 label ScanDescriptors near
+    190					 ; find	interface descriptor
+    191	000000C0  8B 06			   mov eax,[esi] ; start
+    192	000000C2  80 FC	04		   cmp ah,4 ; interface
+    193	000000C5  75 EA			   jne NextDescriptor
+    194					 ; check interface descriptor
+    195	000000C7  8B 4E	02		   mov ecx,[esi+2] ; values
+    196					 ; verify bInterfaceNumber
+    197	000000CA  3A 0D	0001016Br	   cmp cl,[SetInterface+4]
+    198	000000D0  75 DF			   jne NextDescriptor
+    199					 ; verify bAlternateSetting
+    200	000000D2  3A 2D	00010169r	   cmp ch,[SetInterface+2]
+    201	000000D8  75 D7			   jne NextDescriptor
+    202					 ; show	matched	descriptor
+    203					   call	DosWrite c,1,offset(sInfoA),sInfoB-sInfoA,offset(BytesDone)
+1   204	000000DA  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   205	000000DF  6A 0C				 PUSH	 SINFOB-SINFOA
+1   206	000000E1  68 0001013Dr			 PUSH	 OFFSET(SINFOA)
+1   207	000000E6  6A 01				 PUSH	 1
+1   208	000000E8  E8 00000000e			 CALL	 DOSWRITE
+1   209	000000ED  83 C4	10			 ADD	 ESP,00010h
+    210	000000F0  8B 06			   mov eax,[esi] ; start
+    211	000000F2  0F C8			   bswap eax ; reorder
+    212	000000F4  E8 000003BF		   call	ShowReturnCode
+    213	000000F9  0F C8			   bswap eax ; restore
+    214	000000FB			 label ScanInterface near
+    215					 ; point to next descriptor
+    216	000000FB  25 000000FF		   and eax,0FFh	; length
+    217	00000100  03 F0			   add esi,eax ; next
+    218	00000102  2B D8			   sub ebx,eax ; next
+    219	00000104  0F 86	00000190	   jna NotIsoOpenAttempt
+    220					 ; find	endpoint descriptor
+    221	0000010A  8B 06			   mov eax,[esi] ; start
+    222	0000010C  80 FC	05		   cmp ah,5 ; endpoint
+    223	0000010F  75 EA			   jne ScanInterface
+    224					 ; check endpoint descriptor
+    225	00000111  8B 4E	02		   mov ecx,[esi+2] ; values
+    226					 ; verify bEndpointAddress
+    227	00000114  3A 0D	00010173r	   cmp cl,[byte(IsoParm+4)]
+    228	0000011A  75 DF			   jne ScanInterface
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 5
+hybrid.asm
+
+
+
+    229					 ; verify bmAttributes
+    230	0000011C  80 E5	F3		   and ch,0F3h ; synctype
+    231	0000011F  80 FD	01		   cmp ch,1 ; isochronous
+    232	00000122  75 D7			   jne ScanInterface
+    233					 ; override wIsoFrameLength
+    234	00000124  C1 E9	10		   shr ecx,16 ;	wMaxPacketSize
+    235	00000127  66| 89 0D 00010175r	   mov [word(IsoParm+6)],cx
+    236					 ; show	matched	descriptor
+    237					   call	DosWrite c,1,offset(sInfoA),sInfoB-sInfoA,offset(BytesDone)
+1   238	0000012E  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   239	00000133  6A 0C				 PUSH	 SINFOB-SINFOA
+1   240	00000135  68 0001013Dr			 PUSH	 OFFSET(SINFOA)
+1   241	0000013A  6A 01				 PUSH	 1
+1   242	0000013C  E8 00000000e			 CALL	 DOSWRITE
+1   243	00000141  83 C4	10			 ADD	 ESP,00010h
+    244	00000144  8B 06			   mov eax,[esi] ; start
+    245	00000146  0F C8			   bswap eax ; reorder
+    246	00000148  E8 0000036B		   call	ShowReturnCode
+    247					 ; show	current	parameters
+    248					   call	DosWrite c,1,offset(sInfoB),sInfoC-sInfoB,offset(BytesDone)
+1   249	0000014D  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   250	00000152  6A 0C				 PUSH	 SINFOC-SINFOB
+1   251	00000154  68 00010149r			 PUSH	 OFFSET(SINFOB)
+1   252	00000159  6A 01				 PUSH	 1
+1   253	0000015B  E8 00000000e			 CALL	 DOSWRITE
+1   254	00000160  83 C4	10			 ADD	 ESP,00010h
+    255	00000163  A1 00010173r		   mov eax,[IsoParm+4]
+    256	00000168  E8 0000034B		   call	ShowReturnCode
+    257					 ; set configuration request
+    258					   call	DosWrite c,1,offset(sInfo1),sInfo2-sInfo1,offset(BytesDone)
+1   259	0000016D  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   260	00000172  6A 18				 PUSH	 SINFO2-SINFO1
+1   261	00000174  68 0001005Dr			 PUSH	 OFFSET(SINFO1)
+1   262	00000179  6A 01				 PUSH	 1
+1   263	0000017B  E8 00000000e			 CALL	 DOSWRITE
+1   264	00000180  83 C4	10			 ADD	 ESP,00010h
+    265					   call	DosWrite c,[fhDevice],offset(SetConfiguration),8,offset(BytesDone)
+1   266	00000183  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   267	00000188  6A 08				 PUSH	 8
+1   268	0000018A  68 0001015Fr			 PUSH	 OFFSET(SETCONFIGURATION)
+1   269	0000018F  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   270	00000195  E8 00000000e			 CALL	 DOSWRITE
+1   271	0000019A  83 C4	10			 ADD	 ESP,00010h
+    272	0000019D  E8 00000316		   call	ShowReturnCode
+    273	000001A2  0F 85	000000F2	   jnz NotIsoOpenAttempt
+    274					 ; setup alternative interface request
+    275					   call	DosWrite c,1,offset(sInfo2),sInfo3-sInfo2,offset(BytesDone)
+1   276	000001A8  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   277	000001AD  6A 1E				 PUSH	 SINFO3-SINFO2
+1   278	000001AF  68 00010075r			 PUSH	 OFFSET(SINFO2)
+1   279	000001B4  6A 01				 PUSH	 1
+1   280	000001B6  E8 00000000e			 CALL	 DOSWRITE
+1   281	000001BB  83 C4	10			 ADD	 ESP,00010h
+    282					   call	DosWrite c,[fhDevice],offset(SetInterface),8,offset(BytesDone)
+1   283	000001BE  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   284	000001C3  6A 08				 PUSH	 8
+1   285	000001C5  68 00010167r			 PUSH	 OFFSET(SETINTERFACE)
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 6
+hybrid.asm
+
+
+
+1   286	000001CA  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   287	000001D0  E8 00000000e			 CALL	 DOSWRITE
+1   288	000001D5  83 C4	10			 ADD	 ESP,00010h
+    289	000001D8  E8 000002DB		   call	ShowReturnCode
+    290	000001DD  0F 85	000000B7	   jnz NotIsoOpenAttempt
+    291					 ; create isochronous event semaphore
+    292					   call	DosWrite c,1,offset(sInfo3),sInfo4-sInfo3,offset(BytesDone)
+1   293	000001E3  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   294	000001E8  6A 1B				 PUSH	 SINFO4-SINFO3
+1   295	000001EA  68 00010093r			 PUSH	 OFFSET(SINFO3)
+1   296	000001EF  6A 01				 PUSH	 1
+1   297	000001F1  E8 00000000e			 CALL	 DOSWRITE
+1   298	000001F6  83 C4	10			 ADD	 ESP,00010h
+    299					   call	DosCreateEventSem c,0,offset(IsoParm),1,0
+1   300	000001F9  6A 00				 PUSH	 0
+1   301	000001FB  6A 01				 PUSH	 1
+1   302	000001FD  68 0001016Fr			 PUSH	 OFFSET(ISOPARM)
+1   303	00000202  6A 00				 PUSH	 0
+1   304	00000204  E8 00000000e			 CALL	 DOSCREATEEVENTSEM
+1   305	00000209  83 C4	10			 ADD	 ESP,00010h
+    306	0000020C  E8 000002A7		   call	ShowReturnCode
+    307	00000211  0F 85	00000083	   jnz NotIsoOpenAttempt
+    308					 ; register termination	processing
+    309					   call	DosExitList c,1,offset(ProcessComplete)
+1   310	00000217  68 000002E5r			 PUSH	 OFFSET(PROCESSCOMPLETE)
+1   311	0000021C  6A 01				 PUSH	 1
+1   312	0000021E  E8 00000000e			 CALL	 DOSEXITLIST
+1   313	00000223  83 C4	08			 ADD	 ESP,00008h
+    314					 ; open	isochronous transfer
+    315					   call	DosWrite c,1,offset(sInfo4),sInfo5-sInfo4,offset(BytesDone)
+1   316	00000226  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   317	0000022B  6A 16				 PUSH	 SINFO5-SINFO4
+1   318	0000022D  68 000100AEr			 PUSH	 OFFSET(SINFO4)
+1   319	00000232  6A 01				 PUSH	 1
+1   320	00000234  E8 00000000e			 CALL	 DOSWRITE
+1   321	00000239  83 C4	10			 ADD	 ESP,00010h
+    322					   call	DosDevIOCtl c,[fhDevice],0ECh,040h,offset(IsoParm),14,offset(ParmLen),offset	    +
+    323					 (IsoData),tSize,offset(DataLen)
+1   324	0000023C  68 00002014r			 PUSH	 OFFSET(DATALEN)
+1   325	00000241  68 0000FFFF			 PUSH	 TSIZE
+1   326	00000246  68 00000000r			 PUSH	 OFFSET(ISODATA)
+1   327	0000024B  68 00002018r			 PUSH	 OFFSET(PARMLEN)
+1   328	00000250  6A 0E				 PUSH	 14
+1   329	00000252  68 0001016Fr			 PUSH	 OFFSET(ISOPARM)
+1   330	00000257  6A 40				 PUSH	 040H
+1   331	00000259  68 000000EC			 PUSH	 0ECH
+1   332	0000025E  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   333	00000264  E8 00000000e			 CALL	 DOSDEVIOCTL
+1   334	00000269  83 C4	24			 ADD	 ESP,00024h
+    335	0000026C  E8 00000247		   call	ShowReturnCode
+    336	00000271  75 23			   jnz EndProcess
+    337					 ; show	application waiting message
+    338					   call	DosWrite c,1,offset(sGood2),sGood3-sGood2,offset(BytesDone)
+1   339	00000273  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   340	00000278  6A 0C				 PUSH	 SGOOD3-SGOOD2
+1   341	0000027A  68 00010022r			 PUSH	 OFFSET(SGOOD2)
+1   342	0000027F  6A 01				 PUSH	 1
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 7
+hybrid.asm
+
+
+
+1   343	00000281  E8 00000000e			 CALL	 DOSWRITE
+1   344	00000286  83 C4	10			 ADD	 ESP,00010h
+    345					 ; hang	in here	for 3 seconds
+    346					   call	DosSleep c,3000
+1   347	00000289  68 00000BB8			 PUSH	 3000
+1   348	0000028E  E8 00000000e			 CALL	 DOSSLEEP
+1   349	00000293  83 C4	04			 ADD	 ESP,00004h
+    350	00000296			 label EndProcess near
+    351					 ; force process complete
+    352	00000296  2B C0			   sub eax,eax ; success
+1   353	00000298  C9				 LEAVED
+1   354	00000299  C3				 RET	 00000h
+    355	0000029A			 label NotIsoOpenAttempt near
+    356					 ; close usb stream device driver
+    357					   call	DosWrite c,1,offset(sInfo9),sInfoA-sInfo9,offset(BytesDone)
+1   358	0000029A  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   359	0000029F  6A 15				 PUSH	 SINFOA-SINFO9
+1   360	000002A1  68 00010128r			 PUSH	 OFFSET(SINFO9)
+1   361	000002A6  6A 01				 PUSH	 1
+1   362	000002A8  E8 00000000e			 CALL	 DOSWRITE
+1   363	000002AD  83 C4	10			 ADD	 ESP,00010h
+    364					   call	DosClose c,[fhDevice]
+1   365	000002B0  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   366	000002B6  E8 00000000e			 CALL	 DOSCLOSE
+1   367	000002BB  83 C4	04			 ADD	 ESP,00004h
+    368	000002BE  E8 000001F5		   call	ShowReturnCode
+    369	000002C3			 label BadDosOpenAttempt near
+    370					 ; show	application stopped message
+    371					   call	DosWrite c,1,offset(sGood1),10,offset(BytesDone)
+1   372	000002C3  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   373	000002C8  6A 0A				 PUSH	 10
+1   374	000002CA  68 00010018r			 PUSH	 OFFSET(SGOOD1)
+1   375	000002CF  6A 01				 PUSH	 1
+1   376	000002D1  E8 00000000e			 CALL	 DOSWRITE
+1   377	000002D6  83 C4	10			 ADD	 ESP,00010h
+    378					 ; exit	the process
+    379					   call	DosExit	c,1,0
+1   380	000002D9  6A 00				 PUSH	 0
+1   381	000002DB  6A 01				 PUSH	 1
+1   382	000002DD  E8 00000000e			 CALL	 DOSEXIT
+1   383	000002E2  83 C4	08			 ADD	 ESP,00008h
+    384	000002E5			 endp MainRoutine
+    385
+    386	000002E5			 codeseg
+    387	000002E5			 proc ProcessComplete c	near
+    388					 arg @@ReasonCode
+    389					 ; show	application quitting message
+1   390	000002E5  C8 0000 00			 ENTERD	 00000h,0
+1   391					   call	DosWrite c,1,offset(sGood4),sGood5-sGood4,offset(BytesDone)
+2   392	000002E9  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+2   393	000002EE  6A 0D				 PUSH	 SGOOD5-SGOOD4
+2   394	000002F0  68 0001003Br			 PUSH	 OFFSET(SGOOD4)
+2   395	000002F5  6A 01				 PUSH	 1
+2   396	000002F7  E8 00000000e			 CALL	 DOSWRITE
+2   397	000002FC  83 C4	10			 ADD	 ESP,00010h
+    398					 ; report reason code
+    399					 ; mov eax,[@@ReasonCode]
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 8
+hybrid.asm
+
+
+
+    400					 ; call	ShowReturnCode
+    401					 ; close isochronous transfer
+    402					   call	DosWrite c,1,offset(sInfo6),sInfo7-sInfo6,offset(BytesDone)
+1   403	000002FF  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   404	00000304  6A 16				 PUSH	 SINFO7-SINFO6
+1   405	00000306  68 000100DAr			 PUSH	 OFFSET(SINFO6)
+1   406	0000030B  6A 01				 PUSH	 1
+1   407	0000030D  E8 00000000e			 CALL	 DOSWRITE
+1   408	00000312  83 C4	10			 ADD	 ESP,00010h
+    409					   call	DosDevIOCtl c,[fhDevice],0ECh,041h,0,0,0,0,0,0
+1   410	00000315  6A 00				 PUSH	 0
+1   411	00000317  6A 00				 PUSH	 0
+1   412	00000319  6A 00				 PUSH	 0
+1   413	0000031B  6A 00				 PUSH	 0
+1   414	0000031D  6A 00				 PUSH	 0
+1   415	0000031F  6A 00				 PUSH	 0
+1   416	00000321  6A 41				 PUSH	 041H
+1   417	00000323  68 000000EC			 PUSH	 0ECH
+1   418	00000328  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   419	0000032E  E8 00000000e			 CALL	 DOSDEVIOCTL
+1   420	00000333  83 C4	24			 ADD	 ESP,00024h
+    421	00000336  E8 0000017D		   call	ShowReturnCode
+    422					 ; close isochronous event semaphore
+    423					   call	DosWrite c,1,offset(sInfo7),sInfo8-sInfo7,offset(BytesDone)
+1   424	0000033B  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   425	00000340  6A 1A				 PUSH	 SINFO8-SINFO7
+1   426	00000342  68 000100F0r			 PUSH	 OFFSET(SINFO7)
+1   427	00000347  6A 01				 PUSH	 1
+1   428	00000349  E8 00000000e			 CALL	 DOSWRITE
+1   429	0000034E  83 C4	10			 ADD	 ESP,00010h
+    430					   call	DosCloseEventSem c,[IsoParm]
+1   431	00000351  FF 35	0001016Fr		 PUSH	 [ISOPARM]
+1   432	00000357  E8 00000000e			 CALL	 DOSCLOSEEVENTSEM
+1   433	0000035C  83 C4	04			 ADD	 ESP,00004h
+    434	0000035F  E8 00000154		   call	ShowReturnCode
+    435					 ; reset alternative interface request
+    436	00000364  C6 05	00010169r 00	   mov [SetInterface+2],0 ; zero bandwidth
+    437					   call	DosWrite c,1,offset(sInfo8),sInfo9-sInfo8,offset(BytesDone)
+1   438	0000036B  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   439	00000370  6A 1E				 PUSH	 SINFO9-SINFO8
+1   440	00000372  68 0001010Ar			 PUSH	 OFFSET(SINFO8)
+1   441	00000377  6A 01				 PUSH	 1
+1   442	00000379  E8 00000000e			 CALL	 DOSWRITE
+1   443	0000037E  83 C4	10			 ADD	 ESP,00010h
+    444					   call	DosWrite c,[fhDevice],offset(SetInterface),8,offset(BytesDone)
+1   445	00000381  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   446	00000386  6A 08				 PUSH	 8
+1   447	00000388  68 00010167r			 PUSH	 OFFSET(SETINTERFACE)
+1   448	0000038D  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   449	00000393  E8 00000000e			 CALL	 DOSWRITE
+1   450	00000398  83 C4	10			 ADD	 ESP,00010h
+    451	0000039B  E8 00000118		   call	ShowReturnCode
+    452					 ; close usb stream device driver
+    453					   call	DosWrite c,1,offset(sInfo9),sInfoA-sInfo9,offset(BytesDone)
+1   454	000003A0  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   455	000003A5  6A 15				 PUSH	 SINFOA-SINFO9
+1   456	000003A7  68 00010128r			 PUSH	 OFFSET(SINFO9)
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 9
+hybrid.asm
+
+
+
+1   457	000003AC  6A 01				 PUSH	 1
+1   458	000003AE  E8 00000000e			 CALL	 DOSWRITE
+1   459	000003B3  83 C4	10			 ADD	 ESP,00010h
+    460					   call	DosClose c,[fhDevice]
+1   461	000003B6  FF 35	00000008r		 PUSH	 [FHDEVICE]
+1   462	000003BC  E8 00000000e			 CALL	 DOSCLOSE
+1   463	000003C1  83 C4	04			 ADD	 ESP,00004h
+    464	000003C4  E8 000000EF		   call	ShowReturnCode
+    465					 ; show	application stopped message
+    466					   call	DosWrite c,1,offset(sGood1),10,offset(BytesDone)
+1   467	000003C9  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   468	000003CE  6A 0A				 PUSH	 10
+1   469	000003D0  68 00010018r			 PUSH	 OFFSET(SGOOD1)
+1   470	000003D5  6A 01				 PUSH	 1
+1   471	000003D7  E8 00000000e			 CALL	 DOSWRITE
+1   472	000003DC  83 C4	10			 ADD	 ESP,00010h
+    473					 ; exit	termination process
+    474					   call	DosExitList c,3,0)
+1   475	000003DF  6A 00				 PUSH	 0
+1   476	000003E1  6A 03				 PUSH	 3
+1   477	000003E3  E8 00000000e			 CALL	 DOSEXITLIST
+1   478	000003E8  83 C4	08			 ADD	 ESP,00008h
+    479	000003EB			 endp ProcessComplete
+    480
+    481	000003EB			 codeseg
+    482	000003EB			 proc chr2ddn near
+    483					 ; convert char	to ddname
+    484	000003EB  33 F6			   xor esi,esi ; first position
+    485	000003ED			 label UpdateDriverName	near
+    486	000003ED  47			   inc edi ; next position
+    487	000003EE  8A 07			   mov al,[edi]	; obtain
+    488					 ; validate character
+    489	000003F0  3C 21			   cmp al,"!" ;	control
+    490	000003F2  72 34			   jb EndChr2ddn ; reject
+    491	000003F4  3C 22			   cmp al,'"' ;	special
+    492	000003F6  74 30			   je EndChr2ddn ; reject
+    493	000003F8  3C 2A			   cmp al,"*" ;	special
+    494	000003FA  74 2C			   je EndChr2ddn ; reject
+    495	000003FC  3C 2E			   cmp al,"." ;	special
+    496	000003FE  74 28			   je EndChr2ddn ; reject
+    497	00000400  3C 2F			   cmp al,"/" ;	special
+    498	00000402  74 24			   je EndChr2ddn ; reject
+    499	00000404  3C 3A			   cmp al,":" ;	special
+    500	00000406  74 20			   je EndChr2ddn ; reject
+    501	00000408  3C 3C			   cmp al,"<" ;	special
+    502	0000040A  74 1C			   je EndChr2ddn ; reject
+    503	0000040C  3C 3E			   cmp al,">" ;	special
+    504	0000040E  74 18			   je EndChr2ddn ; reject
+    505	00000410  3C 3F			   cmp al,"?" ;	special
+    506	00000412  74 14			   je EndChr2ddn ; reject
+    507	00000414  3C 5C			   cmp al,"\" ;	special
+    508	00000416  74 10			   je EndChr2ddn ; reject
+    509	00000418  3C 7C			   cmp al,"|" ;	special
+    510	0000041A  74 0C			   je EndChr2ddn ; reject
+    511					 ; update ddname character
+    512	0000041C  88 86	00010005r	   mov [szDriver+esi],al
+    513	00000422  46			   inc esi ; next position
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 10
+hybrid.asm
+
+
+
+    514	00000423  83 FE	08		   cmp esi,8 ; maximum
+    515	00000426  72 C5			   jb UpdateDriverName
+    516	00000428			 label EndChr2ddn near
+    517	00000428  C3			   ret ; return
+    518	00000429			 endp chr2ddn
+    519
+    520	00000429			 codeseg
+    521	00000429			 proc hex2bin near
+    522					 ; convert hex to binary
+    523	00000429  2B D2			   sub edx,edx ; output
+    524	0000042B			 label ConvertInput near
+    525	0000042B  47			   inc edi ; next position
+    526	0000042C  8A 07			   mov al,[edi]	; digit
+    527					 ; convert decimal digit
+    528	0000042E  3C 30			   cmp al,"0" ;	minimum
+    529	00000430  72 0D			   jb NotDecimal ; hex
+    530	00000432  3C 39			   cmp al,"9" ;	maximum
+    531	00000434  77 09			   ja NotDecimal ; hex
+    532					 ; convert to binary
+    533	00000436  2C 30			   sub al,"0"-00h
+    534	00000438  C1 E2	04		   shl edx,4 ; output
+    535	0000043B  32 D0			   xor dl,al ; insert
+    536	0000043D  EB EC			   jmp ConvertInput
+    537	0000043F			 label NotDecimal near
+    538					 ; convert character
+    539	0000043F  3C 41			   cmp al,"A" ;	minimum
+    540	00000441  72 0D			   jb EndHex2bin ; end
+    541	00000443  3C 46			   cmp al,"F" ;	maximum
+    542	00000445  77 09			   ja EndHex2bin ; end
+    543					 ; convert to binary
+    544	00000447  2C 37			   sub al,"A"-0Ah
+    545	00000449  C1 E2	04		   shl edx,4 ; output
+    546	0000044C  32 D0			   xor dl,al ; insert
+    547	0000044E  EB DB			   jmp ConvertInput
+    548	00000450			 label EndHex2bin near
+    549	00000450  C3			   ret ; return
+    550	00000451			 endp hex2bin
+    551
+    552	00000451			 codeseg
+    553	00000451			 proc ProcessArguments near
+    554					 ; scan	for forward slash
+    555	00000451  8A 07			   mov al,[edi]	; character
+    556	00000453  47			   inc edi ; next position
+    557	00000454  3C 00			   cmp al,00h ;	terminator
+    558	00000456  74 5F			   je EndScanString ; done
+    559	00000458  3C 2F			   cmp al,'/' ;	parameter
+    560	0000045A  75 F5			   jne ProcessArguments
+    561					 ; parm	AlternateSetting
+    562	0000045C  80 3F	61		   cmp [byte(edi)],'a'
+    563	0000045F  75 13			   jne NotAltSetting
+    564	00000461  E8 FFFFFFC3		   call	hex2bin	; convert
+    565					 ; override bAlternateSetting
+    566	00000466  88 15	00010169r	   mov [byte(SetInterface+2)],dl
+    567	0000046C  88 15	00010174r	   mov [byte(IsoParm+5)],dl
+    568	00000472  EB DD			   jmp ProcessArguments
+    569	00000474			 label NotAltSetting near
+    570					 ; parm	EndpointAddress
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 11
+hybrid.asm
+
+
+
+    571	00000474  80 3F	65		   cmp [byte(edi)],'e'
+    572	00000477  75 0D			   jne NotEptAddress
+    573	00000479  E8 FFFFFFAB		   call	hex2bin	; convert
+    574					 ; override bEndpointAddress
+    575	0000047E  88 15	00010173r	   mov [byte(IsoParm+4)],dl
+    576	00000484  EB CB			   jmp ProcessArguments
+    577	00000486			 label NotEptAddress near
+    578					 ; parm	IsoFrameCount
+    579	00000486  80 3F	66		   cmp [byte(edi)],'f'
+    580	00000489  75 0E			   jne NotFrameCount
+    581	0000048B  E8 FFFFFF99		   call	hex2bin	; convert
+    582					 ; override wIsoFrameCount
+    583	00000490  66| 89 15 0001017Br	   mov [word(IsoParm+12)],dx
+    584	00000497  EB B8			   jmp ProcessArguments
+    585	00000499			 label NotFrameCount near
+    586					 ; parm	InterfaceNumber
+    587	00000499  80 3F	69		   cmp [byte(edi)],'i'
+    588	0000049C  75 0D			   jne NotIntfcNumber
+    589	0000049E  E8 FFFFFF86		   call	hex2bin	; convert
+    590					 ; override bInterfaceNumber
+    591	000004A3  88 15	0001016Br	   mov [byte(SetInterface+4)],dl
+    592	000004A9  EB A6			   jmp ProcessArguments
+    593	000004AB			 label NotIntfcNumber near
+    594					 ; parm	DeviceDriverName
+    595	000004AB  80 3F	6E		   cmp [byte(edi)],'n'
+    596	000004AE  75 A1			   jne ProcessArguments
+    597	000004B0  E8 FFFFFF36		   call	chr2ddn	; update
+    598	000004B5  EB 9A			   jmp ProcessArguments
+    599	000004B7			 label EndScanString near
+    600					 ; skip	sanity checks
+    601	000004B7  C3			   ret ; return
+    602	000004B8			 endp ProcessArguments
+    603
+    604	000004B8			 dataseg
+    605	0001017D  30 31	32 33 34 35 36+	 hex2ascii db '0123456789ABCDEF'
+    606		  37 38	39 41 42 43 44+
+    607		  45 46
+    608
+    609	0001018D			 dataseg
+    610	0001018D  5B 3F	3F 3F 3F 3F 3F+	 szStatus db '[????????]',13,10
+    611		  3F 3F	5D 0D 0A
+    612
+    613	00010199			 codeseg
+    614	000004B8			 proc ShowReturnCode near
+    615					 ; skip	zero return code
+    616	000004B8  85 C0			   test	eax,eax	; zero
+    617	000004BA  74 35			   jz EndShow ;	finished
+    618	000004BC  50			   push	eax ; save register
+    619					 ; convert return code
+    620	000004BD  B9 00000008		   mov ecx,8 ; code length
+    621	000004C2			 label ConvertDigit near
+    622	000004C2  8B D0			   mov edx,eax ; error code
+    623	000004C4  83 E2	0F		   and edx,0000000Fh ; digit
+    624	000004C7  8A 92	0001017Dr	   mov dl,[hex2ascii+edx]
+    625	000004CD  88 91	0001018Dr	   mov [szStatus+ecx],dl
+    626	000004D3  C1 E8	04		   shr eax,4 ; next one
+    627	000004D6  E2 EA			   loop	ConvertDigit
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 12
+hybrid.asm
+
+
+
+    628					 ; show	appropriate info message
+    629					   call	DosWrite c,1,offset(szStatus),12,offset(BytesDone)
+1   630	000004D8  68 00000004r			 PUSH	 OFFSET(BYTESDONE)
+1   631	000004DD  6A 0C				 PUSH	 12
+1   632	000004DF  68 0001018Dr			 PUSH	 OFFSET(SZSTATUS)
+1   633	000004E4  6A 01				 PUSH	 1
+1   634	000004E6  E8 00000000e			 CALL	 DOSWRITE
+1   635	000004EB  83 C4	10			 ADD	 ESP,00010h
+    636	000004EE  58			   pop eax ; restore register
+    637	000004EF  85 C0			   test	eax,eax	; check
+    638	000004F1			 label EndShow near
+    639	000004F1  C3			   ret ; return
+    640	000004F2			 endp ShowReturnCode
+    641
+    642					 end MainRoutine
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 13
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "24-06-12"
+??FILENAME			  Text	 "hybrid  "
+??TIME				  Text	 "10:52:52"
+??VERSION			  Number 0401
+@32BIT				  Text	 1
+@@ARG				  Number [FLAT:EBP+0014]
+@@ENV				  Number [FLAT:EBP+0010]
+@@MOD				  Number [FLAT:EBP+0008]
+@@NUL				  Number [FLAT:EBP+000C]
+@@REASONCODE			  Number [FLAT:EBP+0008]
+@CODE				  Text	 FLAT
+@CODESIZE			  Text	 0
+@CPU				  Text	 1F9FH
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 FLAT
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 HYBRID
+@INTERFACE			  Text	 00H
+@MODEL				  Text	 1
+@STACK				  Text	 FLAT
+@WORDSIZE			  Text	 4
+ACTIONTAKEN			  Dword	 FLAT:0000
+ASIZE				  Number 00010000
+BADDOSOPENATTEMPT		  Near	 FLAT:02C3
+BYTESDONE			  Dword	 FLAT:0004
+CHR2DDN				  Near	 FLAT:03EB
+CONFIGDESCRIPTOR		  Byte	 FLAT:0014
+CONVERTDIGIT			  Near	 FLAT:04C2
+CONVERTINPUT			  Near	 FLAT:042B
+DATALEN				  Dword	 FLAT:2014
+DOSCLOSE			  Near	 ----:---- Extern
+DOSCLOSEEVENTSEM		  Near	 ----:---- Extern
+DOSCREATEEVENTSEM		  Near	 ----:---- Extern
+DOSDEVIOCTL			  Near	 ----:---- Extern
+DOSEXIT				  Near	 ----:---- Extern
+DOSEXITLIST			  Near	 ----:---- Extern
+DOSOPEN				  Near	 ----:---- Extern
+DOSSLEEP			  Near	 ----:---- Extern
+DOSWRITE			  Near	 ----:---- Extern
+ENDCHR2DDN			  Near	 FLAT:0428
+ENDHEX2BIN			  Near	 FLAT:0450
+ENDPROCESS			  Near	 FLAT:0296
+ENDSCANSTRING			  Near	 FLAT:04B7
+ENDSHOW				  Near	 FLAT:04F1
+FHDEVICE			  Dword	 FLAT:0008
+FUSED				  Number 0000
+GETCONFIGDESCRIPTOR		  Dword	 FLAT:000C
+HEX2ASCII			  Byte	 FLAT:0001017D
+HEX2BIN				  Near	 FLAT:0429
+ISIZE				  Number 5555
+ISODATA				  Byte	 FLAT:0000
+ISOPARM				  Dword	 FLAT:0001016F
+IUSED				  Number 0003
+MAINROUTINE			  Near	 FLAT:0000
+Turbo Assembler	 Version 4.1	    24-06-12 10:52:52	    Page 14
+Symbol Table
+
+
+
+MSIZE				  Number FFFF
+NEXTDESCRIPTOR			  Near	 FLAT:00B1
+NOTALTSETTING			  Near	 FLAT:0474
+NOTDECIMAL			  Near	 FLAT:043F
+NOTEPTADDRESS			  Near	 FLAT:0486
+NOTFRAMECOUNT			  Near	 FLAT:0499
+NOTINTFCNUMBER			  Near	 FLAT:04AB
+NOTISOOPENATTEMPT		  Near	 FLAT:029A
+PARMLEN				  Dword	 FLAT:2018
+PROCESSARGUMENTS		  Near	 FLAT:0451
+PROCESSCOMPLETE			  Near	 FLAT:02E5
+SCANDESCRIPTORS			  Near	 FLAT:00C0
+SCANINTERFACE			  Near	 FLAT:00FB
+SETCONFIGURATION		  Byte	 FLAT:0001015F
+SETINTERFACE			  Byte	 FLAT:00010167
+SGOOD0				  Byte	 FLAT:0001000E
+SGOOD1				  Byte	 FLAT:00010018
+SGOOD2				  Byte	 FLAT:00010022
+SGOOD3				  Byte	 FLAT:0001002E
+SGOOD4				  Byte	 FLAT:0001003B
+SGOOD5				  Byte	 FLAT:00010048
+SHOWRETURNCODE			  Near	 FLAT:04B8
+SINFO0				  Byte	 FLAT:00010048
+SINFO1				  Byte	 FLAT:0001005D
+SINFO2				  Byte	 FLAT:00010075
+SINFO3				  Byte	 FLAT:00010093
+SINFO4				  Byte	 FLAT:000100AE
+SINFO5				  Byte	 FLAT:000100C4
+SINFO6				  Byte	 FLAT:000100DA
+SINFO7				  Byte	 FLAT:000100F0
+SINFO8				  Byte	 FLAT:0001010A
+SINFO9				  Byte	 FLAT:00010128
+SINFOA				  Byte	 FLAT:0001013D
+SINFOB				  Byte	 FLAT:00010149
+SINFOC				  Byte	 FLAT:00010155
+SINFOD				  Byte	 FLAT:0001015F
+SZDEVICE			  Byte	 FLAT:00010000
+SZDRIVER			  Byte	 FLAT:00010005
+SZSTATUS			  Byte	 FLAT:0001018D
+TSIZE				  Number FFFF
+UPDATEDRIVERNAME		  Near	 FLAT:03ED
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  STACK				  32  2000 Para	  Stack	  STACK
+  _BSS				  32  201C Dword  Public  BSS
+  _DATA				  32  00010199 Dword  Public  DATA
+FLAT				  Group
+_TEXT				  32  04F2 Dword  Public  CODE
+
