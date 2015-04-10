@@ -282,7 +282,7 @@ endp idciso
 
 codeseg
 proc IdcUsbd c near
-uses ds,di,es,si,bx,cx
+uses ds,di,es,fs,si,bx,cx
 ; obtain usbd entry point
   mov dx,ds ; data selector
   lea di,[idcepi+06] ; target

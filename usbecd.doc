@@ -1,5 +1,5 @@
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD20S.ZIP ³
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD21S.ZIP ³
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
  Provides a device driver to directly control classless usb devices attached
@@ -11,7 +11,7 @@
  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
  ³ Contains the source code of the USB 2.0 Extended Control Driver for OS/2. ³
  ³ Contains 2 sample applications written in C and 3 sample REXX procedures. ³
-|³ Contains 3 test applications written in Borland Turbo Assembler for OS/2. ³
+³³ Contains 3 test applications written in Borland Turbo Assembler for OS/2. ³
  ³ Contains 2 documentation files: usbecd.doc (this file) and usbecd.txt.    ³
  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 

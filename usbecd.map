@@ -3,7 +3,7 @@
 
  Start     Length     Name                   Class
  0001:0000 001FFH     _DATA                  DATA
- 0002:0000 006EDH     _TEXT                  CODE
+ 0002:0000 006F1H     _TEXT                  CODE
 
  Origin   Group
  0001:0   DGROUP

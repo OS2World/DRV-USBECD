@@ -1,5 +1,5 @@
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD20.ZIP ³
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD21.ZIP ³
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
  Provides a device driver to directly control classless usb devices attached
@@ -35,7 +35,7 @@
 ³ Installation ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
- Move the USBECD20.ZIP file into a directory of your choice and unzip it.
+ Move the USBECD21.ZIP file into a directory of your choice and unzip it.
  Copy the USBECD.SYS file to your C:\OS2\BOOT\ directory. Add the device
  driver to the CONFIG.SYS file with the DEVICE=C:\OS2\BOOT\USBECD.SYS
  statement and restart your system. Attach the usb device that you want to

@@ -1,4 +1,4 @@
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 1
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 1
 usbecd.asm
 
 
@@ -13,7 +13,7 @@ usbecd.asm
       8					 ; device driver header
       9	    0000  FFFFFFFF		 hdrlnk	dd 0FFFFFFFFh
      10	    0004  D180			 hdratr	dw 0D180h
-     11	    0006  048Br			 hdrstr	dw offset(strategy)
+     11	    0006  048Fr			 hdrstr	dw offset(strategy)
      12	    0008  0016r			 hdridc	dw offset(idcentry)
      13	    000A  24 20	20 20 20 20 20+	 hdrddn	db "$	    "
      14		  20
@@ -60,7 +60,7 @@ usbecd.asm
      55					 ; supply request block
      56	    005F  00000016sr		 idctarget dd idcentry
      57	    0063  0000s			 idcdatsel dw @data
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 2
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 2
 usbecd.asm
 
 
@@ -122,7 +122,7 @@ usbecd.asm
     112	    0100  00000016sr		 idrtarget dd idcentry
     113	    0104  0000s			 idrdatsel dw @data
     114	    0106  92			 idrcatgry db 92h ; class
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 3
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 3
 usbecd.asm
 
 
@@ -184,7 +184,7 @@ usbecd.asm
     169	    004D  E9 00B8		   jmp IdcGoodStatus ; done
     170	    0050			 label NotIsoInterrupt near
     171					 ; provide completion status
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 4
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 4
 usbecd.asm
 
 
@@ -246,7 +246,7 @@ usbecd.asm
     226	    00B7  23 16	0038r		   and dx,[adxvid] ; idVendor
     227	    00BB  3B 16	0032r		   cmp dx,[adsvid] ; idVendor
     228	    00BF  75 4A			   jne EndIdcEntry ; reject
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 5
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 5
 usbecd.asm
 
 
@@ -308,7 +308,7 @@ usbecd.asm
     283	    0131  B2 67			   mov dl,67h ;	openeventsem
     284	    0133  FF 1E	001Er		   call	[devhlp] ; helper
     285					 ; post	event semaphore
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 6
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 6
 usbecd.asm
 
 
@@ -325,879 +325,881 @@ usbecd.asm
     295
     296	    014C			 codeseg
     297	    014C			 proc IdcUsbd c	near
-    298					 uses ds,di,es,si,bx,cx
+    298					 uses ds,di,es,fs,si,bx,cx
     299					 ; obtain usbd entry point
 1   300	    014C  1E				 PUSH	 DS
 1   301	    014D  57				 PUSH	 DI
 1   302	    014E  06				 PUSH	 ES
-1   303	    014F  56				 PUSH	 SI
-1   304	    0150  53				 PUSH	 BX
-1   305	    0151  51				 PUSH	 CX
-1   306	    0152  8C DA			   mov dx,ds ; data selector
-    307	    0154  BF 002Cr		   lea di,[idcepi+06] ;	target
-    308	    0157  8C C1			   mov cx,es ; packet selector
-    309	    0159  8E C2			   mov es,dx ; data selector
-    310					 ; provide usbd	data selector
-    311	    015B  8E 1E	0030r		   mov ds,[idcepi+10] ;	selector
-    312					 ; invoke usbd function	processor
-    313					   call	[dword(es:di)] c,bx,cx
-1   314	    015F  51				 PUSH	 CX
-1   315	    0160  53				 PUSH	 BX
-1   316	    0161  26: FF 1D			 CALL	 [DWORD(ES:DI)]
-1   317	    0164  83 C4	04			 ADD	 SP,00004h
-1   318	    0167  59				 POP	 CX
-1   319	    0168  5B				 POP	 BX
-1   320	    0169  5E				 POP	 SI
-1   321	    016A  07				 POP	 ES
-1   322	    016B  5F				 POP	 DI
-1   323	    016C  1F				 POP	 DS
-1   324	    016D  C3				 RET	 00000h
-    325	    016E			 endp IdcUsbd
-    326
-    327	    016E			 dataseg
-    328	    0122  0000			 BufferNext dw 0
-    329	    0124  0000			 BufferSize dw 0
-    330	    0126  00000000		 EventHandle dd	0
-    331	    012A  0C*(00)		 LockHandle db 12 dup(0)
-    332
-    333	    0136			 codeseg
-    334	    016E			 proc IssueIoControl near
-    335					 ; obtain isochronous flags
-    336	    016E  A0 0119r		   mov al,[idriflags] ;	state
-    337					 ; obtain function/category
-    338	    0171  26: 8B 57 0D		   mov dx,[word(es:bx+13)]
-    339					 ; isochronous open request
-    340	    0175  81 FA	40EC		   cmp dx,40ECh	; open request
-    341	    0179  0F 85	0170		   jne NotIsoOpen ; other
-    342					 ; check isochronous closed
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 7
+1   303	    014F  0F A0				 PUSH	 FS
+1   304	    0151  56				 PUSH	 SI
+1   305	    0152  53				 PUSH	 BX
+1   306	    0153  51				 PUSH	 CX
+1   307	    0154  8C DA			   mov dx,ds ; data selector
+    308	    0156  BF 002Cr		   lea di,[idcepi+06] ;	target
+    309	    0159  8C C1			   mov cx,es ; packet selector
+    310	    015B  8E C2			   mov es,dx ; data selector
+    311					 ; provide usbd	data selector
+    312	    015D  8E 1E	0030r		   mov ds,[idcepi+10] ;	selector
+    313					 ; invoke usbd function	processor
+    314					   call	[dword(es:di)] c,bx,cx
+1   315	    0161  51				 PUSH	 CX
+1   316	    0162  53				 PUSH	 BX
+1   317	    0163  26: FF 1D			 CALL	 [DWORD(ES:DI)]
+1   318	    0166  83 C4	04			 ADD	 SP,00004h
+1   319	    0169  59				 POP	 CX
+1   320	    016A  5B				 POP	 BX
+1   321	    016B  5E				 POP	 SI
+1   322	    016C  0F A1				 POP	 FS
+1   323	    016E  07				 POP	 ES
+1   324	    016F  5F				 POP	 DI
+1   325	    0170  1F				 POP	 DS
+1   326	    0171  C3				 RET	 00000h
+    327	    0172			 endp IdcUsbd
+    328
+    329	    0172			 dataseg
+    330	    0122  0000			 BufferNext dw 0
+    331	    0124  0000			 BufferSize dw 0
+    332	    0126  00000000		 EventHandle dd	0
+    333	    012A  0C*(00)		 LockHandle db 12 dup(0)
+    334
+    335	    0136			 codeseg
+    336	    0172			 proc IssueIoControl near
+    337					 ; obtain isochronous flags
+    338	    0172  A0 0119r		   mov al,[idriflags] ;	state
+    339					 ; obtain function/category
+    340	    0175  26: 8B 57 0D		   mov dx,[word(es:bx+13)]
+    341					 ; isochronous open request
+    342	    0179  81 FA	40EC		   cmp dx,40ECh	; open request
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 7
 usbecd.asm
 
 
 
-    343	    017D  3C 02			   cmp al,2 ; closed state
-    344	    017F  74 03			   je ProcessIsoOpen ; free
-    345					 ; issue isochronous close
-    346	    0181  E8 0173		   call	ProcessIsoClose
-    347	    0184			 label ProcessIsoOpen near
-    348					 ; access proper device
-    349	    0184  8B 36	003Er		   mov si,[adaproper]
-    350					 ; setup device	address
-    351	    0188  89 36	00EAr		   mov [idrreqblk],si
-    352					 ; check parm buffer size
-    353	    018C  26: 8B 4F 19		   mov cx,[word(es:bx+25)]
-    354	    0190  83 F9	0C		   cmp cx,12 ; length
-    355	    0193  74 09			   je VerifyParmBuffer
-    356	    0195  83 F9	0E		   cmp cx,14 ; length
-    357	    0198  74 04			   je VerifyParmBuffer
-    358	    019A			 label SetIsoFailure near
-    359	    019A  B8 8113		   mov ax,8113h	; error/done/parm
-    360	    019D  C3			   ret ; return	failure
-    361	    019E			 label VerifyParmBuffer	near
-    362					 ; verify parm buffer accessible
-    363	    019E  26: 8B 47 11		   mov ax,[word(es:bx+17)] ; selector
-    364	    01A2  26: 8B 7F 0F		   mov di,[word(es:bx+15)] ; offset
-    365	    01A6  BA 0127		   mov dx,0127h	; verifyaccess
-    366	    01A9  FF 1E	001Er		   call	[devhlp] ; helper
-    367	    01AD  72 EB			   jc SetIsoFailure
-    368					 ; obtain parm buffer address
-    369	    01AF  26: 0F B4 77 0F	   lfs si,[dword(es:bx+15)]
-    370					 ; save	event semaphore	handle
-    371	    01B4  66| 64: 8B 04		   mov eax,[dword(fs:si+00)]
-    372	    01B8  66| A3 0126r		   mov [EventHandle],eax
-    373					 ; set alternate index
-    374	    01BC  64: 8B 44 04		   mov ax,[word(fs:si+04)]
-    375	    01C0  88 26	0118r		   mov [idraltint],ah
-    376					 ; check endpoint address
-    377	    01C4  A8 0F			   test	al,0Fh ; number
-    378	    01C6  74 D2			   jz SetIsoFailure
-    379					 ; set endpoint	address
-    380	    01C8  25 008F		   and ax,008Fh	; endpoint
-    381	    01CB  A3 00ECr		   mov [idrreqept],ax
-    382					 ; setup transfer direction
-    383	    01CE  3C 80			   cmp al,80h ;	device-to-host
-    384	    01D0  B0 21			   mov al,21h ;	device-to-host ;*
-    385	    01D2  73 02			   jnb EndSetupDirection ; no
-    386	    01D4  B0 22			   mov al,22h ;	host-to-device ;*
-    387	    01D6			 label EndSetupDirection near
-    388	    01D6  A2 00EEr		   mov [byte(idrreqflg)],al
-    389					 ; check iso frame length
-    390	    01D9  64: 8B 44 06		   mov ax,[word(fs:si+06)]
-    391	    01DD  85 C0			   test	ax,ax ;	nonzero
-    392	    01DF  74 B9			   jz SetIsoFailure
-    393					 ; set max packet size
-    394	    01E1  8A F4			   mov dh,ah ; multiplier
-    395	    01E3  80 E4	07		   and ah,07h ;	get size
-    396	    01E6  A3 00FEr		   mov [idrmaxpkz],ax
-    397					 ; set packet multiplier
-    398	    01E9  80 E6	18		   and dh,18h ;	isolate
-    399	    01EC  C0 EE	03		   shr dh,03h ;	proper
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 8
+    343	    017D  0F 85	0170		   jne NotIsoOpen ; other
+    344					 ; check isochronous closed
+    345	    0181  3C 02			   cmp al,2 ; closed state
+    346	    0183  74 03			   je ProcessIsoOpen ; free
+    347					 ; issue isochronous close
+    348	    0185  E8 0173		   call	ProcessIsoClose
+    349	    0188			 label ProcessIsoOpen near
+    350					 ; access proper device
+    351	    0188  8B 36	003Er		   mov si,[adaproper]
+    352					 ; setup device	address
+    353	    018C  89 36	00EAr		   mov [idrreqblk],si
+    354					 ; check parm buffer size
+    355	    0190  26: 8B 4F 19		   mov cx,[word(es:bx+25)]
+    356	    0194  83 F9	0C		   cmp cx,12 ; length
+    357	    0197  74 09			   je VerifyParmBuffer
+    358	    0199  83 F9	0E		   cmp cx,14 ; length
+    359	    019C  74 04			   je VerifyParmBuffer
+    360	    019E			 label SetIsoFailure near
+    361	    019E  B8 8113		   mov ax,8113h	; error/done/parm
+    362	    01A1  C3			   ret ; return	failure
+    363	    01A2			 label VerifyParmBuffer	near
+    364					 ; verify parm buffer accessible
+    365	    01A2  26: 8B 47 11		   mov ax,[word(es:bx+17)] ; selector
+    366	    01A6  26: 8B 7F 0F		   mov di,[word(es:bx+15)] ; offset
+    367	    01AA  BA 0127		   mov dx,0127h	; verifyaccess
+    368	    01AD  FF 1E	001Er		   call	[devhlp] ; helper
+    369	    01B1  72 EB			   jc SetIsoFailure
+    370					 ; obtain parm buffer address
+    371	    01B3  26: 0F B4 77 0F	   lfs si,[dword(es:bx+15)]
+    372					 ; save	event semaphore	handle
+    373	    01B8  66| 64: 8B 04		   mov eax,[dword(fs:si+00)]
+    374	    01BC  66| A3 0126r		   mov [EventHandle],eax
+    375					 ; set alternate index
+    376	    01C0  64: 8B 44 04		   mov ax,[word(fs:si+04)]
+    377	    01C4  88 26	0118r		   mov [idraltint],ah
+    378					 ; check endpoint address
+    379	    01C8  A8 0F			   test	al,0Fh ; number
+    380	    01CA  74 D2			   jz SetIsoFailure
+    381					 ; set endpoint	address
+    382	    01CC  25 008F		   and ax,008Fh	; endpoint
+    383	    01CF  A3 00ECr		   mov [idrreqept],ax
+    384					 ; setup transfer direction
+    385	    01D2  3C 80			   cmp al,80h ;	device-to-host
+    386	    01D4  B0 21			   mov al,21h ;	device-to-host ;*
+    387	    01D6  73 02			   jnb EndSetupDirection ; no
+    388	    01D8  B0 22			   mov al,22h ;	host-to-device ;*
+    389	    01DA			 label EndSetupDirection near
+    390	    01DA  A2 00EEr		   mov [byte(idrreqflg)],al
+    391					 ; check iso frame length
+    392	    01DD  64: 8B 44 06		   mov ax,[word(fs:si+06)]
+    393	    01E1  85 C0			   test	ax,ax ;	nonzero
+    394	    01E3  74 B9			   jz SetIsoFailure
+    395					 ; set max packet size
+    396	    01E5  8A F4			   mov dh,ah ; multiplier
+    397	    01E7  80 E4	07		   and ah,07h ;	get size
+    398	    01EA  A3 00FEr		   mov [idrmaxpkz],ax
+    399					 ; set packet multiplier
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 8
 usbecd.asm
 
 
 
-    400	    01EF  80 FE	03		   cmp dh,03h ;	invalid
-    401	    01F2  74 A6			   je SetIsoFailure
-    402	    01F4  88 36	011Er		   mov [idrhbmult],dh
-    403					 ; set iso frame length
-    404	    01F8  A3 011Ar		   mov [idrifrmsz],ax
-    405	    01FB  80 FE	01		   cmp dh,01h ;	once
-    406	    01FE  72 08			   jb EndMultiple
-    407	    0200  74 02			   je AddMultiple
-    408	    0202  03 C0			   add ax,ax ; twice
-    409	    0204			 label AddMultiple near
-    410	    0204  01 06	011Ar		   add [idrifrmsz],ax
-    411	    0208			 label EndMultiple near
-    412					 ; check iso frame count
-    413	    0208  2B C0			   sub ax,ax ; reset size
-    414	    020A  83 F9	0E		   cmp cx,14 ; available
-    415	    020D  75 08			   jne Set2ndBuffer
-    416					 ; apply iso frame count
-    417	    020F  64: 8B 44 0C		   mov ax,[word(fs:si+12)]
-    418	    0213  D1 E0			   shl ax,1 ; buffer size
-    419	    0215  72 83			   jc SetIsoFailure
-    420	    0217			 label Set2ndBuffer near
-    421					 ; set buffer 2	size
-    422	    0217  A3 00FAr		   mov [idrbufsz2],ax
-    423					 ; set iso buffer size
-    424	    021A  64: 8B 4C 08		   mov cx,[word(fs:si+08)]
-    425	    021E  89 0E	0122r		   mov [BufferNext],cx
-    426					 ; set number of buffers
-    427	    0222  64: 8B 44 0A		   mov ax,[word(fs:si+10)]
-    428	    0226  A3 011Cr		   mov [idrinabuf],ax
-    429					 ; set buffers boundary
-    430	    0229  F7 E1			   mul cx ; total size
-    431	    022B  0F 82	FF6B		   jc SetIsoFailure
-    432	    022F  A3 0124r		   mov [BufferSize],ax
-    433					 ; get buffer 1	size
-    434	    0232  83 E9	04		   sub cx,4 ; lengths
-    435	    0235  0F 82	FF61		   jb SetIsoFailure
-    436	    0239  2B 0E	00FAr		   sub cx,[idrbufsz2]
-    437	    023D  0F 82	FF59		   jb SetIsoFailure
-    438					 ; check buffer	1 size
-    439	    0241  A1 011Ar		   mov ax,[idrifrmsz]
-    440	    0244  8B 16	00FAr		   mov dx,[idrbufsz2]
-    441	    0248  D1 EA			   shr dx,1 ; frames
-    442	    024A  74 06			   jz CheckBuffer
-    443	    024C  F7 E2			   mul dx ; payloads
-    444	    024E  0F 82	FF48		   jc SetIsoFailure
-    445	    0252			 label CheckBuffer near
-    446	    0252  3B C8			   cmp cx,ax ; minimum
-    447	    0254  0F 82	FF42		   jb SetIsoFailure
-    448					 ; set buffer 1	size
-    449	    0258  89 0E	00F4r		   mov [idrbufsz1],cx
-    450					 ; check data buffer size
-    451	    025C  26: 8B 4F 1B		   mov cx,[word(es:bx+27)]
-    452	    0260  3B 0E	0124r		   cmp cx,[BufferSize]
-    453	    0264  0F 82	FF32		   jb SetIsoFailure
-    454					 ; check data buffer offset
-    455	    0268  26: 8B 7F 13		   mov di,[word(es:bx+19)]
-    456	    026C  85 FF			   test	di,di ;	aligned
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 9
+    400	    01ED  80 E6	18		   and dh,18h ;	isolate
+    401	    01F0  C0 EE	03		   shr dh,03h ;	proper
+    402	    01F3  80 FE	03		   cmp dh,03h ;	invalid
+    403	    01F6  74 A6			   je SetIsoFailure
+    404	    01F8  88 36	011Er		   mov [idrhbmult],dh
+    405					 ; set iso frame length
+    406	    01FC  A3 011Ar		   mov [idrifrmsz],ax
+    407	    01FF  80 FE	01		   cmp dh,01h ;	once
+    408	    0202  72 08			   jb EndMultiple
+    409	    0204  74 02			   je AddMultiple
+    410	    0206  03 C0			   add ax,ax ; twice
+    411	    0208			 label AddMultiple near
+    412	    0208  01 06	011Ar		   add [idrifrmsz],ax
+    413	    020C			 label EndMultiple near
+    414					 ; check iso frame count
+    415	    020C  2B C0			   sub ax,ax ; reset size
+    416	    020E  83 F9	0E		   cmp cx,14 ; available
+    417	    0211  75 08			   jne Set2ndBuffer
+    418					 ; apply iso frame count
+    419	    0213  64: 8B 44 0C		   mov ax,[word(fs:si+12)]
+    420	    0217  D1 E0			   shl ax,1 ; buffer size
+    421	    0219  72 83			   jc SetIsoFailure
+    422	    021B			 label Set2ndBuffer near
+    423					 ; set buffer 2	size
+    424	    021B  A3 00FAr		   mov [idrbufsz2],ax
+    425					 ; set iso buffer size
+    426	    021E  64: 8B 4C 08		   mov cx,[word(fs:si+08)]
+    427	    0222  89 0E	0122r		   mov [BufferNext],cx
+    428					 ; set number of buffers
+    429	    0226  64: 8B 44 0A		   mov ax,[word(fs:si+10)]
+    430	    022A  A3 011Cr		   mov [idrinabuf],ax
+    431					 ; set buffers boundary
+    432	    022D  F7 E1			   mul cx ; total size
+    433	    022F  0F 82	FF6B		   jc SetIsoFailure
+    434	    0233  A3 0124r		   mov [BufferSize],ax
+    435					 ; get buffer 1	size
+    436	    0236  83 E9	04		   sub cx,4 ; lengths
+    437	    0239  0F 82	FF61		   jb SetIsoFailure
+    438	    023D  2B 0E	00FAr		   sub cx,[idrbufsz2]
+    439	    0241  0F 82	FF59		   jb SetIsoFailure
+    440					 ; check buffer	1 size
+    441	    0245  A1 011Ar		   mov ax,[idrifrmsz]
+    442	    0248  8B 16	00FAr		   mov dx,[idrbufsz2]
+    443	    024C  D1 EA			   shr dx,1 ; frames
+    444	    024E  74 06			   jz CheckBuffer
+    445	    0250  F7 E2			   mul dx ; payloads
+    446	    0252  0F 82	FF48		   jc SetIsoFailure
+    447	    0256			 label CheckBuffer near
+    448	    0256  3B C8			   cmp cx,ax ; minimum
+    449	    0258  0F 82	FF42		   jb SetIsoFailure
+    450					 ; set buffer 1	size
+    451	    025C  89 0E	00F4r		   mov [idrbufsz1],cx
+    452					 ; check data buffer size
+    453	    0260  26: 8B 4F 1B		   mov cx,[word(es:bx+27)]
+    454	    0264  3B 0E	0124r		   cmp cx,[BufferSize]
+    455	    0268  0F 82	FF32		   jb SetIsoFailure
+    456					 ; check data buffer offset
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 9
 usbecd.asm
 
 
 
-    457	    026E  0F 85	FF28		   jnz SetIsoFailure
-    458					 ; verify data buffer access
-    459	    0272  26: 8B 47 15		   mov ax,[word(es:bx+21)]
-    460	    0276  BA 0127		   mov dx,0127h	; verifyaccess
-    461	    0279  FF 1E	001Er		   call	[devhlp] ; helper
-    462	    027D  0F 82	FF19		   jc SetIsoFailure
-    463					 ; get data buffer linear address
-    464	    0281  66| 26: 0F B7	77 13	   movzx esi,[word(es:bx+19)]
-    465	    0287  26: 8B 47 15		   mov ax,[word(es:bx+21)]
-    466	    028B  B2 5B			   mov dl,5Bh ;	virttolin
-    467	    028D  FF 1E	001Er		   call	[devhlp] ; helper
-    468	    0291  66| 8B F8		   mov edi,eax ; linear	address
-    469					 ; get lock handle linear address
-    470	    0294  66| BE 0000012Ar	   mov esi,offset(LockHandle)
-    471	    029A  8C D8			   mov ax,ds ; data selector
-    472	    029C  B2 5B			   mov dl,5Bh ;	virttolin
-    473	    029E  FF 1E	001Er		   call	[devhlp] ; helper
-    474	    02A2  66| 8B F0		   mov esi,eax ; linear	address
-    475					 ; lock	data buffer memory region
-    476	    02A5  66| B8 0000001A	   mov eax,01Ah	; dma/long/write
-    477	    02AB  53 66| 57		   push	bx edi ; save registers
-    478	    02AE  66| 8B DF		   mov ebx,edi ; linear	address
-    479	    02B1  66| BF FFFFFFFF	   mov edi,-1 ;	no page	list
-    480	    02B7  B2 55			   mov dl,55h ;	vmlock
-    481	    02B9  FF 1E	001Er		   call	[devhlp] ; helper
-    482	    02BD  66| 5F 5B		   pop edi bx ;	restore
-    483	    02C0  0F 82	FED6		   jc SetIsoFailure
-    484					 ; provide buffer access
-    485	    02C4  53			   push	bx ; save register
-    486	    02C5  A1 0024r		   mov ax,[gdtsel+2] ; gdtselector
-    487	    02C8  66| 8B DF		   mov ebx,edi ; linear	address
-    488	    02CB  B2 5C			   mov dl,5Ch ;	lintogdtselector
-    489	    02CD  FF 1E	001Er		   call	[devhlp] ; helper
-    490	    02D1  5B			   pop bx ; restore register
-    491	    02D2  0F 82	FEC4		   jc SetIsoFailure
-    492					 ; set buffer 1	address
-    493	    02D6  66| 26: 8B 47	13	   mov eax,[es:bx+19]
-    494	    02DB  66| A3 00F0r		   mov [idrbufad1],eax
-    495					 ; set buffer 2	address
-    496	    02DF  03 06	00F4r		   add ax,[idrbufsz1]
-    497	    02E3  66| A3 00F6r		   mov [idrbufad2],eax
-    498					 ; issue isochronous open
-    499	    02E7  B0 01			   mov al,1 ; open request
-    500	    02E9  E8 0189		   call	IssueIsoRequest
-    501	    02EC  C3			   ret ; return
-    502	    02ED			 label NotIsoOpen near
-    503					 ; isochronous close request
-    504	    02ED  81 FA	41EC		   cmp dx,41ECh	; close	request
-    505	    02F1  75 2D			   jne NotIsoClose ; other
-    506					 ; check isochronous closed
-    507	    02F3  3C 02			   cmp al,2 ; closed state
-    508	    02F5  74 25			   je SetIsoSuccess ; done
-    509	    02F7			 label ProcessIsoClose near
-    510					 ; check isochronous opened
-    511	    02F7  3C 01			   cmp al,1 ; opened state
-    512	    02F9  74 05			   je RequestIsoClose ;	idle
-    513					 ; force isochronous cancel
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 10
+    457	    026C  26: 8B 7F 13		   mov di,[word(es:bx+19)]
+    458	    0270  85 FF			   test	di,di ;	aligned
+    459	    0272  0F 85	FF28		   jnz SetIsoFailure
+    460					 ; verify data buffer access
+    461	    0276  26: 8B 47 15		   mov ax,[word(es:bx+21)]
+    462	    027A  BA 0127		   mov dx,0127h	; verifyaccess
+    463	    027D  FF 1E	001Er		   call	[devhlp] ; helper
+    464	    0281  0F 82	FF19		   jc SetIsoFailure
+    465					 ; get data buffer linear address
+    466	    0285  66| 26: 0F B7	77 13	   movzx esi,[word(es:bx+19)]
+    467	    028B  26: 8B 47 15		   mov ax,[word(es:bx+21)]
+    468	    028F  B2 5B			   mov dl,5Bh ;	virttolin
+    469	    0291  FF 1E	001Er		   call	[devhlp] ; helper
+    470	    0295  66| 8B F8		   mov edi,eax ; linear	address
+    471					 ; get lock handle linear address
+    472	    0298  66| BE 0000012Ar	   mov esi,offset(LockHandle)
+    473	    029E  8C D8			   mov ax,ds ; data selector
+    474	    02A0  B2 5B			   mov dl,5Bh ;	virttolin
+    475	    02A2  FF 1E	001Er		   call	[devhlp] ; helper
+    476	    02A6  66| 8B F0		   mov esi,eax ; linear	address
+    477					 ; lock	data buffer memory region
+    478	    02A9  66| B8 0000001A	   mov eax,01Ah	; dma/long/write
+    479	    02AF  53 66| 57		   push	bx edi ; save registers
+    480	    02B2  66| 8B DF		   mov ebx,edi ; linear	address
+    481	    02B5  66| BF FFFFFFFF	   mov edi,-1 ;	no page	list
+    482	    02BB  B2 55			   mov dl,55h ;	vmlock
+    483	    02BD  FF 1E	001Er		   call	[devhlp] ; helper
+    484	    02C1  66| 5F 5B		   pop edi bx ;	restore
+    485	    02C4  0F 82	FED6		   jc SetIsoFailure
+    486					 ; provide buffer access
+    487	    02C8  53			   push	bx ; save register
+    488	    02C9  A1 0024r		   mov ax,[gdtsel+2] ; gdtselector
+    489	    02CC  66| 8B DF		   mov ebx,edi ; linear	address
+    490	    02CF  B2 5C			   mov dl,5Ch ;	lintogdtselector
+    491	    02D1  FF 1E	001Er		   call	[devhlp] ; helper
+    492	    02D5  5B			   pop bx ; restore register
+    493	    02D6  0F 82	FEC4		   jc SetIsoFailure
+    494					 ; set buffer 1	address
+    495	    02DA  66| 26: 8B 47	13	   mov eax,[es:bx+19]
+    496	    02DF  66| A3 00F0r		   mov [idrbufad1],eax
+    497					 ; set buffer 2	address
+    498	    02E3  03 06	00F4r		   add ax,[idrbufsz1]
+    499	    02E7  66| A3 00F6r		   mov [idrbufad2],eax
+    500					 ; issue isochronous open
+    501	    02EB  B0 01			   mov al,1 ; open request
+    502	    02ED  E8 0189		   call	IssueIsoRequest
+    503	    02F0  C3			   ret ; return
+    504	    02F1			 label NotIsoOpen near
+    505					 ; isochronous close request
+    506	    02F1  81 FA	41EC		   cmp dx,41ECh	; close	request
+    507	    02F5  75 2D			   jne NotIsoClose ; other
+    508					 ; check isochronous closed
+    509	    02F7  3C 02			   cmp al,2 ; closed state
+    510	    02F9  74 25			   je SetIsoSuccess ; done
+    511	    02FB			 label ProcessIsoClose near
+    512					 ; check isochronous opened
+    513	    02FB  3C 01			   cmp al,1 ; opened state
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 10
 usbecd.asm
 
 
 
-    514	    02FB  B0 04			   mov al,4 ; cancel request
-    515	    02FD  E8 0175		   call	IssueIsoRequest
-    516	    0300			 label RequestIsoClose near
-    517					 ; issue isochronous close
-    518	    0300  B0 02			   mov al,2 ; close request
-    519	    0302  E8 0170		   call	IssueIsoRequest
-    520					 ; build linear	lock handle
-    521	    0305  8C D8			   mov ax,ds ; data selector
-    522	    0307  66| BE 0000012Ar	   mov esi,offset(LockHandle)
-    523	    030D  B2 5B			   mov dl,5Bh ;	virttolin
-    524	    030F  FF 1E	001Er		   call	[devhlp] ; helper
-    525	    0313  66| 8B F0		   mov esi,eax ; linear	address
-    526					 ; unlock data buffer memory
-    527	    0316  B2 56			   mov dl,56h ;	vmunlock
-    528	    0318  FF 1E	001Er		   call	[devhlp] ; helper
-    529	    031C			 label SetIsoSuccess near
-    530					 ; set success status code
-    531	    031C  B8 0100		   mov ax,0100h	; ok/done
-    532	    031F  C3			   ret ; return	success
-    533	    0320			 label NotIsoClose near
-    534					 ; isochronous queue request
-    535	    0320  81 FA	42EC		   cmp dx,42ECh	; queue	request
-    536	    0324  0F 85	FE72		   jne SetIsoFailure ; error
-    537					 ; check isochronous closed
-    538	    0328  3C 02			   cmp al,2 ; closed state
-    539	    032A  0F 84	FE6C		   je SetIsoFailure ; error
-    540					 ; issue isochronous queue
-    541	    032E  2B C0			   sub ax,ax ; single buffer
-    542	    0330  39 06	00FAr		   cmp [idrbufsz2],ax ;	size
-    543	    0334  74 02			   je ProcessRequest ; yes
-    544	    0336  B0 80			   mov al,80h ;	two buffers
-    545	    0338			 label ProcessRequest near
-    546	    0338  E8 013A		   call	IssueIsoRequest
-    547					 ; address next	data buffer
-    548	    033B  8B 16	00F0r		   mov dx,[word(idrbufad1)]
-    549	    033F  03 16	0122r		   add dx,[BufferNext] ; bump
-    550	    0343  3B 16	0124r		   cmp dx,[BufferSize] ; limit
-    551	    0347  72 02			   jb SetBufferAddress ; next
-    552	    0349  2B D2			   sub dx,dx ; first buffer
-    553	    034B			 label SetBufferAddress	near
-    554					 ; update buffer 1 address
-    555	    034B  89 16	00F0r		   mov [word(idrbufad1)],dx
-    556					 ; update buffer 2 address
-    557	    034F  03 16	00F4r		   add dx,[idrbufsz1] ;	size
-    558	    0353  89 16	00F6r		   mov [word(idrbufad2)],dx
-    559	    0357  C3			   ret ; return
-    560	    0358			 endp IssueIoControl
-    561
-    562	    0358			 codeseg
-    563	    0358			 proc IssueIoRequest near
-    564					 ; setup device	address
-    565	    0358  89 36	0082r		   mov [sdrreqblk],si
-    566					 ; obtain buffer address
-    567	    035C  53			   push	bx ; save register
-    568	    035D  8B 36	0022r		   mov si,[gdtsel+0] ; gdtselector
-    569	    0361  26: 8B 47 10		   mov ax,[word(es:bx+16)] ; >address
-    570	    0365  26: 8B 5F 0E		   mov bx,[word(es:bx+14)] ; <address
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 11
+    514	    02FD  74 05			   je RequestIsoClose ;	idle
+    515					 ; force isochronous cancel
+    516	    02FF  B0 04			   mov al,4 ; cancel request
+    517	    0301  E8 0175		   call	IssueIsoRequest
+    518	    0304			 label RequestIsoClose near
+    519					 ; issue isochronous close
+    520	    0304  B0 02			   mov al,2 ; close request
+    521	    0306  E8 0170		   call	IssueIsoRequest
+    522					 ; build linear	lock handle
+    523	    0309  8C D8			   mov ax,ds ; data selector
+    524	    030B  66| BE 0000012Ar	   mov esi,offset(LockHandle)
+    525	    0311  B2 5B			   mov dl,5Bh ;	virttolin
+    526	    0313  FF 1E	001Er		   call	[devhlp] ; helper
+    527	    0317  66| 8B F0		   mov esi,eax ; linear	address
+    528					 ; unlock data buffer memory
+    529	    031A  B2 56			   mov dl,56h ;	vmunlock
+    530	    031C  FF 1E	001Er		   call	[devhlp] ; helper
+    531	    0320			 label SetIsoSuccess near
+    532					 ; set success status code
+    533	    0320  B8 0100		   mov ax,0100h	; ok/done
+    534	    0323  C3			   ret ; return	success
+    535	    0324			 label NotIsoClose near
+    536					 ; isochronous queue request
+    537	    0324  81 FA	42EC		   cmp dx,42ECh	; queue	request
+    538	    0328  0F 85	FE72		   jne SetIsoFailure ; error
+    539					 ; check isochronous closed
+    540	    032C  3C 02			   cmp al,2 ; closed state
+    541	    032E  0F 84	FE6C		   je SetIsoFailure ; error
+    542					 ; issue isochronous queue
+    543	    0332  2B C0			   sub ax,ax ; single buffer
+    544	    0334  39 06	00FAr		   cmp [idrbufsz2],ax ;	size
+    545	    0338  74 02			   je ProcessRequest ; yes
+    546	    033A  B0 80			   mov al,80h ;	two buffers
+    547	    033C			 label ProcessRequest near
+    548	    033C  E8 013A		   call	IssueIsoRequest
+    549					 ; address next	data buffer
+    550	    033F  8B 16	00F0r		   mov dx,[word(idrbufad1)]
+    551	    0343  03 16	0122r		   add dx,[BufferNext] ; bump
+    552	    0347  3B 16	0124r		   cmp dx,[BufferSize] ; limit
+    553	    034B  72 02			   jb SetBufferAddress ; next
+    554	    034D  2B D2			   sub dx,dx ; first buffer
+    555	    034F			 label SetBufferAddress	near
+    556					 ; update buffer 1 address
+    557	    034F  89 16	00F0r		   mov [word(idrbufad1)],dx
+    558					 ; update buffer 2 address
+    559	    0353  03 16	00F4r		   add dx,[idrbufsz1] ;	size
+    560	    0357  89 16	00F6r		   mov [word(idrbufad2)],dx
+    561	    035B  C3			   ret ; return
+    562	    035C			 endp IssueIoControl
+    563
+    564	    035C			 codeseg
+    565	    035C			 proc IssueIoRequest near
+    566					 ; setup device	address
+    567	    035C  89 36	0082r		   mov [sdrreqblk],si
+    568					 ; obtain buffer address
+    569	    0360  53			   push	bx ; save register
+    570	    0361  8B 36	0022r		   mov si,[gdtsel+0] ; gdtselector
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 11
 usbecd.asm
 
 
 
-    571	    0369  B2 2E			   mov dl,2Eh ;	phystogdtselector
-    572	    036B  FF 1E	001Er		   call	[devhlp] ; helper
-    573	    036F  5B			   pop bx ; restore register
-    574	    0370  B8 810C		   mov ax,810Ch	; error/done/general
-    575	    0373  0F 82	00FD		   jc NotIssueIoRequest	; failure
-    576	    0377  8E E6			   mov fs,si ; buffer selector
-    577					 ; provide read	setup packet
-    578	    0379  26: 80 7F 02 04	   cmp [byte(es:bx+02)],04h
-    579	    037E  75 1C			   jne EndProvideRead ;	write
-    580					 ; set get device descriptor
-    581	    0380  64: C7 06 0000 0680	   mov [word(fs:0)],0680h
-    582	    0387  64: C7 06 0002 0100	   mov [word(fs:2)],0100h
-    583	    038E  64: C7 06 0004 0000	   mov [word(fs:4)],0000h
-    584	    0395  64: C7 06 0006 0012	   mov [word(fs:6)],0012h
-    585	    039C			 label EndProvideRead near
-    586					 ; obtain data buffer size
-    587	    039C  64: 8B 3E 0006	   mov di,[fs:6] ; size
-    588					 ; verify data buffer size
-    589	    03A1  83 E9	08		   sub cx,08h ;	setup length
-    590	    03A4  3B CF			   cmp cx,di ; data buffer size
-    591	    03A6  B8 8113		   mov ax,8113h	; error/done/parm
-    592	    03A9  0F 82	00C7		   jb NotIssueIoRequest	; failure
-    593					 ; verify setup	packet passed
-    594	    03AD  64: 8B 0E 0000	   mov cx,[fs:0] ; request
-    595	    03B2  64: 8B 16 0004	   mov dx,[fs:4] ; endpoint
-    596	    03B7  80 F9	EC		   cmp cl,0ECh ; not setup
-    597	    03BA  74 26			   je NotControlTransfer
-    598	    03BC			 label ControlTransfer near
-    599					 ; provide setup packet	address
-    600	    03BC  C7 06	0088r 0000	   mov [word(sdrbufad1+0)],0
-    601	    03C2  89 36	008Ar		   mov [word(sdrbufad1+2)],si
-    602					 ; provide setup packet	size
-    603	    03C6  C7 06	008Cr 0008	   mov [sdrbufsz1],8 ; size
-    604					 ; provide data	buffer address
-    605	    03CC  C7 06	008Er 0008	   mov [word(sdrbufad2+0)],8
-    606	    03D2  89 36	0090r		   mov [word(sdrbufad2+2)],si
-    607					 ; provide data	buffer size
-    608	    03D6  89 3E	0092r		   mov [sdrbufsz2],di ;	size
-    609					 ; default control transfer
-    610	    03DA  B9 0004		   mov cx,0004h	; transfer
-    611	    03DD  BA 0000		   mov dx,0000h	; endpoint
-    612	    03E0  EB 31			   jmp StartTransfer ; control
-    613	    03E2			 label NotControlTransfer near
-    614					 ; bulk/interrupt/isochronous
-    615	    03E2  8A CD			   mov cl,ch ; data toggle
-    616					 ; provide transfer type
-    617	    03E4  B5 40			   mov ch,40h ;	interrupt
-    618	    03E6  80 FE	03		   cmp dh,03h ;	interrupt
-    619	    03E9  74 08			   je BulkInterrupt
-    620	    03EB  B5 20			   mov ch,20h ;	bulk
-    621	    03ED  80 FE	02		   cmp dh,02h ;	bulk
-    622	    03F0  74 01			   je BulkInterrupt
-    623					 ; isochronous removed
-    624	    03F2  C3			   ret ; error/done/parm
-    625	    03F3			 label BulkInterrupt near
-    626	    03F3  80 E1	08		   and cl,08h ;	data toggle
-    627	    03F6  81 E2	008F		   and dx,008Fh	; endpoint
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 12
+    571	    0365  26: 8B 47 10		   mov ax,[word(es:bx+16)] ; >address
+    572	    0369  26: 8B 5F 0E		   mov bx,[word(es:bx+14)] ; <address
+    573	    036D  B2 2E			   mov dl,2Eh ;	phystogdtselector
+    574	    036F  FF 1E	001Er		   call	[devhlp] ; helper
+    575	    0373  5B			   pop bx ; restore register
+    576	    0374  B8 810C		   mov ax,810Ch	; error/done/general
+    577	    0377  0F 82	00FD		   jc NotIssueIoRequest	; failure
+    578	    037B  8E E6			   mov fs,si ; buffer selector
+    579					 ; provide read	setup packet
+    580	    037D  26: 80 7F 02 04	   cmp [byte(es:bx+02)],04h
+    581	    0382  75 1C			   jne EndProvideRead ;	write
+    582					 ; set get device descriptor
+    583	    0384  64: C7 06 0000 0680	   mov [word(fs:0)],0680h
+    584	    038B  64: C7 06 0002 0100	   mov [word(fs:2)],0100h
+    585	    0392  64: C7 06 0004 0000	   mov [word(fs:4)],0000h
+    586	    0399  64: C7 06 0006 0012	   mov [word(fs:6)],0012h
+    587	    03A0			 label EndProvideRead near
+    588					 ; obtain data buffer size
+    589	    03A0  64: 8B 3E 0006	   mov di,[fs:6] ; size
+    590					 ; verify data buffer size
+    591	    03A5  83 E9	08		   sub cx,08h ;	setup length
+    592	    03A8  3B CF			   cmp cx,di ; data buffer size
+    593	    03AA  B8 8113		   mov ax,8113h	; error/done/parm
+    594	    03AD  0F 82	00C7		   jb NotIssueIoRequest	; failure
+    595					 ; verify setup	packet passed
+    596	    03B1  64: 8B 0E 0000	   mov cx,[fs:0] ; request
+    597	    03B6  64: 8B 16 0004	   mov dx,[fs:4] ; endpoint
+    598	    03BB  80 F9	EC		   cmp cl,0ECh ; not setup
+    599	    03BE  74 26			   je NotControlTransfer
+    600	    03C0			 label ControlTransfer near
+    601					 ; provide setup packet	address
+    602	    03C0  C7 06	0088r 0000	   mov [word(sdrbufad1+0)],0
+    603	    03C6  89 36	008Ar		   mov [word(sdrbufad1+2)],si
+    604					 ; provide setup packet	size
+    605	    03CA  C7 06	008Cr 0008	   mov [sdrbufsz1],8 ; size
+    606					 ; provide data	buffer address
+    607	    03D0  C7 06	008Er 0008	   mov [word(sdrbufad2+0)],8
+    608	    03D6  89 36	0090r		   mov [word(sdrbufad2+2)],si
+    609					 ; provide data	buffer size
+    610	    03DA  89 3E	0092r		   mov [sdrbufsz2],di ;	size
+    611					 ; default control transfer
+    612	    03DE  B9 0004		   mov cx,0004h	; transfer
+    613	    03E1  BA 0000		   mov dx,0000h	; endpoint
+    614	    03E4  EB 31			   jmp StartTransfer ; control
+    615	    03E6			 label NotControlTransfer near
+    616					 ; bulk/interrupt/isochronous
+    617	    03E6  8A CD			   mov cl,ch ; data toggle
+    618					 ; provide transfer type
+    619	    03E8  B5 40			   mov ch,40h ;	interrupt
+    620	    03EA  80 FE	03		   cmp dh,03h ;	interrupt
+    621	    03ED  74 08			   je BulkInterrupt
+    622	    03EF  B5 20			   mov ch,20h ;	bulk
+    623	    03F1  80 FE	02		   cmp dh,02h ;	bulk
+    624	    03F4  74 01			   je BulkInterrupt
+    625					 ; isochronous removed
+    626	    03F6  C3			   ret ; error/done/parm
+    627	    03F7			 label BulkInterrupt near
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 12
 usbecd.asm
 
 
 
-    628					 ; provide initiation toggle
-    629	    03FA  32 E9			   xor ch,cl ; provide toggle
-    630					 ; provide transfer direction
-    631	    03FC  80 FA	80		   cmp dl,80h ;	device-to-host
-    632	    03FF  B1 01			   mov cl,01h ;	device-to-host
-    633	    0401  73 02			   jnb EndProvideDirection ; no
-    634	    0403  B1 02			   mov cl,02h ;	host-to-device
-    635	    0405			 label EndProvideDirection near
-    636					 ; provide data	buffer address
-    637	    0405  C7 06	0088r 0008	   mov [word(sdrbufad1+0)],8
-    638	    040B  89 36	008Ar		   mov [word(sdrbufad1+2)],si
-    639					 ; provide data	buffer size
-    640	    040F  89 3E	008Cr		   mov [sdrbufsz1],di ;	size
-    641	    0413			 label StartTransfer near
-    642					 ; setup transfer information
-    643	    0413  89 0E	0086r		   mov [sdrreqflg],cx ;	transfer
-    644					 ; setup endpoint information
-    645	    0417  89 16	0084r		   mov [sdrreqept],dx ;	endpoint
-    646					 ; reset maximum packet	size
-    647	    041B  C7 06	0096r 0000	   mov [sdrmaxpkz],0 ; default
-    648					 ; start acceptio operation
-    649	    0421  06 53			   push	es bx ;	save registers
-    650	    0423  8C DB			   mov bx,ds ; get data	selector
-    651	    0425  8E C3			   mov es,bx ; set packet selector
-    652	    0427  BB 0065r		   mov bx,offset(sdrheader) ; packet
-    653	    042A  E8 FD1F		   call	IdcUsbd	; function acceptio
-    654	    042D  26: 8B 47 03		   mov ax,[es:bx+03] ; status
-    655	    0431  F6 C4	80		   test	ah,80h ; any error
-    656	    0434  B0 0C			   mov al,0Ch ;	general
-    657	    0436  75 3A			   jnz EndIssueIoRequest
-    658					 ; await process complete
-    659	    0438  53			   push	bx ; save register
-    660	    0439  8C D8			   mov ax,ds ; event number
-    661	    043B  BB 0082r		   mov bx,offset(sdrreqblk)
-    662					 ; set appropriate timeout
-    663	    043E  2B FF			   sub di,di ; >interval
-    664					 ; check control transfer
-    665	    0440  80 F9	04		   cmp cl,04h ;	control
-    666	    0443  8B CF			   mov cx,di ; <interval
-    667	    0445  74 12			   je SetFixedTimeOut
-    668					 ; bulk/interrupt transfer
-    669	    0447  64: 8B 0E 0002	   mov cx,[fs:2] ; timeout
-    670					 ; check default timeout
-    671	    044C  85 C9			   test	cx,cx ;	minimum
-    672	    044E  74 09			   jz SetFixedTimeOut
-    673					 ; check without timeout
-    674	    0450  83 F9	FF		   cmp cx,0FFFFh ; -1
-    675	    0453  75 06			   jne EndSetupTimeOut
-    676	    0455  8B F9			   mov di,cx ; >interval
-    677	    0457  EB 02			   jmp EndSetupTimeOut
-    678	    0459			 label SetFixedTimeOut near
-    679	    0459  B5 10			   mov ch,10h ;	4 seconds
-    680	    045B			 label EndSetupTimeOut near
-    681	    045B  BA 0004		   mov dx,0004h	; interruptable
-    682	    045E  FF 1E	001Er		   call	[devhlp] ; helper
-    683	    0462  5B			   pop bx ; restore register
-    684	    0463  26: 8B 47 03		   mov ax,[es:bx+03] ; status
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 13
+    628	    03F7  80 E1	08		   and cl,08h ;	data toggle
+    629	    03FA  81 E2	008F		   and dx,008Fh	; endpoint
+    630					 ; provide initiation toggle
+    631	    03FE  32 E9			   xor ch,cl ; provide toggle
+    632					 ; provide transfer direction
+    633	    0400  80 FA	80		   cmp dl,80h ;	device-to-host
+    634	    0403  B1 01			   mov cl,01h ;	device-to-host
+    635	    0405  73 02			   jnb EndProvideDirection ; no
+    636	    0407  B1 02			   mov cl,02h ;	host-to-device
+    637	    0409			 label EndProvideDirection near
+    638					 ; provide data	buffer address
+    639	    0409  C7 06	0088r 0008	   mov [word(sdrbufad1+0)],8
+    640	    040F  89 36	008Ar		   mov [word(sdrbufad1+2)],si
+    641					 ; provide data	buffer size
+    642	    0413  89 3E	008Cr		   mov [sdrbufsz1],di ;	size
+    643	    0417			 label StartTransfer near
+    644					 ; setup transfer information
+    645	    0417  89 0E	0086r		   mov [sdrreqflg],cx ;	transfer
+    646					 ; setup endpoint information
+    647	    041B  89 16	0084r		   mov [sdrreqept],dx ;	endpoint
+    648					 ; reset maximum packet	size
+    649	    041F  C7 06	0096r 0000	   mov [sdrmaxpkz],0 ; default
+    650					 ; start acceptio operation
+    651	    0425  06 53			   push	es bx ;	save registers
+    652	    0427  8C DB			   mov bx,ds ; get data	selector
+    653	    0429  8E C3			   mov es,bx ; set packet selector
+    654	    042B  BB 0065r		   mov bx,offset(sdrheader) ; packet
+    655	    042E  E8 FD1B		   call	IdcUsbd	; function acceptio
+    656	    0431  26: 8B 47 03		   mov ax,[es:bx+03] ; status
+    657	    0435  F6 C4	80		   test	ah,80h ; any error
+    658	    0438  B0 0C			   mov al,0Ch ;	general
+    659	    043A  75 3A			   jnz EndIssueIoRequest
+    660					 ; await process complete
+    661	    043C  53			   push	bx ; save register
+    662	    043D  8C D8			   mov ax,ds ; event number
+    663	    043F  BB 0082r		   mov bx,offset(sdrreqblk)
+    664					 ; set appropriate timeout
+    665	    0442  2B FF			   sub di,di ; >interval
+    666					 ; check control transfer
+    667	    0444  80 F9	04		   cmp cl,04h ;	control
+    668	    0447  8B CF			   mov cx,di ; <interval
+    669	    0449  74 12			   je SetFixedTimeOut
+    670					 ; bulk/interrupt transfer
+    671	    044B  64: 8B 0E 0002	   mov cx,[fs:2] ; timeout
+    672					 ; check default timeout
+    673	    0450  85 C9			   test	cx,cx ;	minimum
+    674	    0452  74 09			   jz SetFixedTimeOut
+    675					 ; check without timeout
+    676	    0454  83 F9	FF		   cmp cx,0FFFFh ; -1
+    677	    0457  75 06			   jne EndSetupTimeOut
+    678	    0459  8B F9			   mov di,cx ; >interval
+    679	    045B  EB 02			   jmp EndSetupTimeOut
+    680	    045D			 label SetFixedTimeOut near
+    681	    045D  B5 10			   mov ch,10h ;	4 seconds
+    682	    045F			 label EndSetupTimeOut near
+    683	    045F  BA 0004		   mov dx,0004h	; interruptable
+    684	    0462  FF 1E	001Er		   call	[devhlp] ; helper
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 13
 usbecd.asm
 
 
 
-    685	    0467  73 09			   jnc EndIssueIoRequest ; normal
-    686					 ; terminate current device request
-    687	    0469  BB 00B0r		   mov bx,offset(tdrheader) ; packet
-    688	    046C  E8 FCDD		   call	IdcUsbd	; function cancelio
-    689	    046F  B8 8111		   mov ax,8111h	; error/done/stop
-    690	    0472			 label EndIssueIoRequest near
-    691	    0472  5B 07			   pop bx es ; restore registers
-    692	    0474			 label NotissueIoRequest near
-    693	    0474  C3			   ret ; return
-    694	    0475			 endp IssueIoRequest
-    695
-    696	    0475			 codeseg
-    697	    0475			 proc IssueIsoRequest
-    698					 ; set isochronous request
-    699	    0475  A2 0119r		   mov [idriflags],al ;	request
-    700					 ; start acceptio operation
-    701	    0478  06 53			   push	es bx ;	save registers
-    702	    047A  8C DB			   mov bx,ds ; get data	selector
-    703	    047C  8E C3			   mov es,bx ; set packet selector
-    704	    047E  BB 00CDr		   mov bx,offset(idrheader) ; packet
-    705	    0481  E8 FCC8		   call	IdcUsbd	; function acceptio
-    706	    0484  26: 8B 47 03		   mov ax,[es:bx+03] ; status
-    707	    0488  5B 07			   pop bx es ; restore registers
-    708	    048A  C3			   ret ; return
-    709	    048B			 endp IssueIsoRequest
-    710
-    711	    048B			 codeseg
-    712	    048B			 proc strategy far
-    713					 ; set parm failure status code
-    714	    048B  B8 8113		   mov ax,8113h	; error/done/parm
-    715					 ; obtain driver request code
-    716	    048E  26: 8A 4F 02		   mov cl,[es:bx+02] ; request
-    717					 ; handle doswrite request
-    718	    0492  80 F9	08		   cmp cl,08h ;	write normal
-    719	    0495  72 1D			   jb NotDosWrite ; other
-    720	    0497  80 F9	09		   cmp cl,09h ;	write verify
-    721	    049A  77 18			   ja NotDosWrite ; other
-    722					 ; verify buffer length
-    723	    049C  26: 8B 4F 12		   mov cx,[word(es:bx+18)]
-    724	    04A0  83 F9	08		   cmp cx,08h ;	setup length
-    725	    04A3  72 5A			   jb EndStrategy ; failure
-    726					 ; access proper device
-    727	    04A5  8B 36	003Er		   mov si,[adaproper]
-    728	    04A9  E8 FEAC		   call	IssueIoRequest
-    729	    04AC  3C 20			   cmp al,20h ;	i/o error
-    730	    04AE  75 4F			   jne EndStrategy ; other
-    731	    04B0  B0 0A			   mov al,0Ah ;	write fault
-    732	    04B2  EB 4B			   jmp EndStrategy ; done
-    733	    04B4			 label NotDosWrite near
-    734					 ; handle dosread request
-    735	    04B4  80 F9	04		   cmp cl,04h ;	read normal
-    736	    04B7  75 18			   jne NotDosRead ; other
-    737					 ; verify buffer length
-    738	    04B9  26: 8B 4F 12		   mov cx,[word(es:bx+18)]
-    739	    04BD  83 F9	1A		   cmp cx,1Ah ;	total length
-    740	    04C0  72 3D			   jb EndStrategy ; failure
-    741					 ; access recent device
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 14
+    685	    0466  5B			   pop bx ; restore register
+    686	    0467  26: 8B 47 03		   mov ax,[es:bx+03] ; status
+    687	    046B  73 09			   jnc EndIssueIoRequest ; normal
+    688					 ; terminate current device request
+    689	    046D  BB 00B0r		   mov bx,offset(tdrheader) ; packet
+    690	    0470  E8 FCD9		   call	IdcUsbd	; function cancelio
+    691	    0473  B8 8111		   mov ax,8111h	; error/done/stop
+    692	    0476			 label EndIssueIoRequest near
+    693	    0476  5B 07			   pop bx es ; restore registers
+    694	    0478			 label NotissueIoRequest near
+    695	    0478  C3			   ret ; return
+    696	    0479			 endp IssueIoRequest
+    697
+    698	    0479			 codeseg
+    699	    0479			 proc IssueIsoRequest
+    700					 ; set isochronous request
+    701	    0479  A2 0119r		   mov [idriflags],al ;	request
+    702					 ; start acceptio operation
+    703	    047C  06 53			   push	es bx ;	save registers
+    704	    047E  8C DB			   mov bx,ds ; get data	selector
+    705	    0480  8E C3			   mov es,bx ; set packet selector
+    706	    0482  BB 00CDr		   mov bx,offset(idrheader) ; packet
+    707	    0485  E8 FCC4		   call	IdcUsbd	; function acceptio
+    708	    0488  26: 8B 47 03		   mov ax,[es:bx+03] ; status
+    709	    048C  5B 07			   pop bx es ; restore registers
+    710	    048E  C3			   ret ; return
+    711	    048F			 endp IssueIsoRequest
+    712
+    713	    048F			 codeseg
+    714	    048F			 proc strategy far
+    715					 ; set parm failure status code
+    716	    048F  B8 8113		   mov ax,8113h	; error/done/parm
+    717					 ; obtain driver request code
+    718	    0492  26: 8A 4F 02		   mov cl,[es:bx+02] ; request
+    719					 ; handle doswrite request
+    720	    0496  80 F9	08		   cmp cl,08h ;	write normal
+    721	    0499  72 1D			   jb NotDosWrite ; other
+    722	    049B  80 F9	09		   cmp cl,09h ;	write verify
+    723	    049E  77 18			   ja NotDosWrite ; other
+    724					 ; verify buffer length
+    725	    04A0  26: 8B 4F 12		   mov cx,[word(es:bx+18)]
+    726	    04A4  83 F9	08		   cmp cx,08h ;	setup length
+    727	    04A7  72 5A			   jb EndStrategy ; failure
+    728					 ; access proper device
+    729	    04A9  8B 36	003Er		   mov si,[adaproper]
+    730	    04AD  E8 FEAC		   call	IssueIoRequest
+    731	    04B0  3C 20			   cmp al,20h ;	i/o error
+    732	    04B2  75 4F			   jne EndStrategy ; other
+    733	    04B4  B0 0A			   mov al,0Ah ;	write fault
+    734	    04B6  EB 4B			   jmp EndStrategy ; done
+    735	    04B8			 label NotDosWrite near
+    736					 ; handle dosread request
+    737	    04B8  80 F9	04		   cmp cl,04h ;	read normal
+    738	    04BB  75 18			   jne NotDosRead ; other
+    739					 ; verify buffer length
+    740	    04BD  26: 8B 4F 12		   mov cx,[word(es:bx+18)]
+    741	    04C1  83 F9	1A		   cmp cx,1Ah ;	total length
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 14
 usbecd.asm
 
 
 
-    742	    04C2  8B 36	0040r		   mov si,[adarecent]
-    743	    04C6  E8 FE8F		   call	IssueIoRequest
-    744	    04C9  3C 20			   cmp al,20h ;	i/o error
-    745	    04CB  75 32			   jne EndStrategy ; other
-    746	    04CD  B0 0B			   mov al,0Bh ;	read fault
-    747	    04CF  EB 2E			   jmp EndStrategy ; done
-    748	    04D1			 label NotDosRead near
-    749					 ; handle dosdevioctl request
-    750	    04D1  80 F9	10		   cmp cl,10h ;	dosdevioctl
-    751	    04D4  75 05			   jne NotDosDevIoctl ;	other
-    752					 ; issue ioctrl	operation
-    753	    04D6  E8 FC95		   call	IssueIoControl
-    754	    04D9  EB 24			   jmp EndStrategy ; done
-    755	    04DB			 label NotDosDevIoctl near
-    756					 ; handle init completion
-    757	    04DB  80 F9	1F		   cmp cl,1Fh ;	init complete
-    758	    04DE  75 18			   jne NotInitComplete
-    759					 ; register class driver
-    760	    04E0  06 53			   push	es bx ;	save registers
-    761	    04E2  8C DB			   mov bx,ds ; get data	selector
-    762	    04E4  8E C3			   mov es,bx ; set packet selector
-    763	    04E6  BB 0042r		   mov bx,offset(regheader) ; packet
-    764	    04E9  E8 FC60		   call	IdcUsbd	; function register
-    765	    04EC  26: 8B 47 03		   mov ax,[es:bx+03] ; status
-    766	    04F0  5B 07			   pop bx es ; restore registers
-    767	    04F2  26: 89 47 03		   mov [es:bx+03],ax ; status
-    768	    04F6  EB 07			   jmp EndStrategy ; done
-    769	    04F8			 label NotInitComplete near
-    770					 ; handle initialization
-    771	    04F8  80 F9	00		   cmp cl,00h ;	initialize
-    772	    04FB  0F 84	00AD		   je Initialize ; once
-    773	    04FF			 label EndStrategy near
-    774					 ; return status code
-    775	    04FF  26: 89 47 03		   mov [es:bx+03],ax
-    776	    0503  CB			   ret ; return
-    777	    0504			 endp strategy
-    778
-    779	    0504			 codeseg
-    780					 ; end of code segment
-    781	    0504			 label EndCode near
-    782
-    783	    0504			 dataseg
-    784					 ; end of data segment
-    785	    0136			 label EndData byte
-    786
-    787	    0136			 dataseg
-    788	    0136  00			 flverbose db 0
-    789
-    790	    0137			 dataseg
-    791	    0137  55 53	42 44 24 20 20+	 ddname	db "USBD$   "
-    792		  20
-    793
-    794	    013F			 dataseg
-    795	    013F  55 53	42 45 43 44 2E+	 InitMsg0 db "USBECD.SYS /D:"
-    796		  53 59	53 20 2F 44 3A
-    797	    014D  30 30	30 30 3A	 msgvid	db "0000:"
-    798	    0152  30 30	30 30 3A	 msgpid	db "0000:"
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 15
+    742	    04C4  72 3D			   jb EndStrategy ; failure
+    743					 ; access recent device
+    744	    04C6  8B 36	0040r		   mov si,[adarecent]
+    745	    04CA  E8 FE8F		   call	IssueIoRequest
+    746	    04CD  3C 20			   cmp al,20h ;	i/o error
+    747	    04CF  75 32			   jne EndStrategy ; other
+    748	    04D1  B0 0B			   mov al,0Bh ;	read fault
+    749	    04D3  EB 2E			   jmp EndStrategy ; done
+    750	    04D5			 label NotDosRead near
+    751					 ; handle dosdevioctl request
+    752	    04D5  80 F9	10		   cmp cl,10h ;	dosdevioctl
+    753	    04D8  75 05			   jne NotDosDevIoctl ;	other
+    754					 ; issue ioctrl	operation
+    755	    04DA  E8 FC95		   call	IssueIoControl
+    756	    04DD  EB 24			   jmp EndStrategy ; done
+    757	    04DF			 label NotDosDevIoctl near
+    758					 ; handle init completion
+    759	    04DF  80 F9	1F		   cmp cl,1Fh ;	init complete
+    760	    04E2  75 18			   jne NotInitComplete
+    761					 ; register class driver
+    762	    04E4  06 53			   push	es bx ;	save registers
+    763	    04E6  8C DB			   mov bx,ds ; get data	selector
+    764	    04E8  8E C3			   mov es,bx ; set packet selector
+    765	    04EA  BB 0042r		   mov bx,offset(regheader) ; packet
+    766	    04ED  E8 FC5C		   call	IdcUsbd	; function register
+    767	    04F0  26: 8B 47 03		   mov ax,[es:bx+03] ; status
+    768	    04F4  5B 07			   pop bx es ; restore registers
+    769	    04F6  26: 89 47 03		   mov [es:bx+03],ax ; status
+    770	    04FA  EB 07			   jmp EndStrategy ; done
+    771	    04FC			 label NotInitComplete near
+    772					 ; handle initialization
+    773	    04FC  80 F9	00		   cmp cl,00h ;	initialize
+    774	    04FF  0F 84	00AD		   je Initialize ; once
+    775	    0503			 label EndStrategy near
+    776					 ; return status code
+    777	    0503  26: 89 47 03		   mov [es:bx+03],ax
+    778	    0507  CB			   ret ; return
+    779	    0508			 endp strategy
+    780
+    781	    0508			 codeseg
+    782					 ; end of code segment
+    783	    0508			 label EndCode near
+    784
+    785	    0508			 dataseg
+    786					 ; end of data segment
+    787	    0136			 label EndData byte
+    788
+    789	    0136			 dataseg
+    790	    0136  00			 flverbose db 0
+    791
+    792	    0137			 dataseg
+    793	    0137  55 53	42 44 24 20 20+	 ddname	db "USBD$   "
+    794		  20
+    795
+    796	    013F			 dataseg
+    797	    013F  55 53	42 45 43 44 2E+	 InitMsg0 db "USBECD.SYS /D:"
+    798		  53 59	53 20 2F 44 3A
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 15
 usbecd.asm
 
 
 
-    799	    0157  30 30	30 30 20 2F 4E+	 msgdrn	db "0000 /N:"
-    800		  3A
-    801	    015F  24 20	20 20 20 20 20+	 msgddn	db "$	     "
-    802		  20 20
-    803	    0168  53 70	65 63 69 66 69+	 InitMsg1 db "Specified	driver name NOT	available",13,10
-    804		  65 64	20 64 72 69 76+
-    805		  65 72	20 6E 61 6D 65+
-    806		  20 4E	4F 54 20 61 76+
-    807		  61 69	6C 61 62 6C 65+
-    808		  0D 0A
-    809	    018D  52 65	71 75 69 72 65+	 InitMsg2 db "Required USBD.SYS	driver NOT available",13,10
-    810		  64 20	55 53 42 44 2E+
-    811		  53 59	53 20 64 72 69+
-    812		  76 65	72 20 4E 4F 54+
-    813		  20 61	76 61 69 6C 61+
-    814		  62 6C	65 0D 0A
-    815	    01B5  52 65	71 75 69 72 65+	 InitMsg3 db "Required GDT selector NOT	available",13,10
-    816		  64 20	47 44 54 20 73+
-    817		  65 6C	65 63 74 6F 72+
-    818		  20 4E	4F 54 20 61 76+
-    819		  61 69	6C 61 62 6C 65+
-    820		  0D 0A
-    821	    01DA  2D 20	55 53 42 20 32+	 InitMsg4 db "-	USB 2.0	Extended Control Driver",13,10
-    822		  2E 30	20 45 78 74 65+
-    823		  6E 64	65 64 20 43 6F+
-    824		  6E 74	72 6F 6C 20 44+
-    825		  72 69	76 65 72 0D 0A
-    826	    01FD			 label InitMsg5	byte
-    827	    01FD  0000			 Written dw 0
-    828
-    829	    01FF			 codeseg
-    830	    0504			 proc bin2hex near
-    831					 ; convert binary to hex
-    832	    0504  F7 D1			   not cx ; wildcard mask
-    833	    0506			 label ConvertBinData near
-    834					 ; convert wildcard mask
-    835	    0506  C1 E1	04		   shl cx,4 ; wildcard
-    836	    0509  B0 23			   mov al,"#" ;	token
-    837	    050B  72 0F			   jc StoreCharacter
-    838					 ; convert binary data
-    839	    050D  8A C6			   mov al,dh ; byte data
-    840	    050F  C0 E8	04		   shr al,4 ; nibble data
-    841	    0512  3C 0A			   cmp al,10 ; character
-    842	    0514  72 04			   jb NotCharacter
-    843					 ; convert to character
-    844	    0516  04 37			   add al,"A"-0Ah ; ascii
-    845	    0518  EB 02			   jmp StoreCharacter
-    846	    051A			 label NotCharacter near
-    847					 ; convert to decimal
-    848	    051A  04 30			   add al,"0"-00h ; ascii
-    849	    051C			 label StoreCharacter near
-    850	    051C  88 04			   mov [ds:si],al ; store
-    851	    051E  46			   inc si ; next position
-    852	    051F  C1 E2	04		   shl dx,4 ; next nibble
-    853	    0522  75 E2			   jnz ConvertBinData
-    854	    0524  85 C9			   test	cx,cx ;	any mask
-    855	    0526  75 DE			   jnz ConvertBinData
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 16
+    799	    014D  30 30	30 30 3A	 msgvid	db "0000:"
+    800	    0152  30 30	30 30 3A	 msgpid	db "0000:"
+    801	    0157  30 30	30 30 20 2F 4E+	 msgdrn	db "0000 /N:"
+    802		  3A
+    803	    015F  24 20	20 20 20 20 20+	 msgddn	db "$	     "
+    804		  20 20
+    805	    0168  53 70	65 63 69 66 69+	 InitMsg1 db "Specified	driver name NOT	available",13,10
+    806		  65 64	20 64 72 69 76+
+    807		  65 72	20 6E 61 6D 65+
+    808		  20 4E	4F 54 20 61 76+
+    809		  61 69	6C 61 62 6C 65+
+    810		  0D 0A
+    811	    018D  52 65	71 75 69 72 65+	 InitMsg2 db "Required USBD.SYS	driver NOT available",13,10
+    812		  64 20	55 53 42 44 2E+
+    813		  53 59	53 20 64 72 69+
+    814		  76 65	72 20 4E 4F 54+
+    815		  20 61	76 61 69 6C 61+
+    816		  62 6C	65 0D 0A
+    817	    01B5  52 65	71 75 69 72 65+	 InitMsg3 db "Required GDT selector NOT	available",13,10
+    818		  64 20	47 44 54 20 73+
+    819		  65 6C	65 63 74 6F 72+
+    820		  20 4E	4F 54 20 61 76+
+    821		  61 69	6C 61 62 6C 65+
+    822		  0D 0A
+    823	    01DA  2D 20	55 53 42 20 32+	 InitMsg4 db "-	USB 2.0	Extended Control Driver",13,10
+    824		  2E 30	20 45 78 74 65+
+    825		  6E 64	65 64 20 43 6F+
+    826		  6E 74	72 6F 6C 20 44+
+    827		  72 69	76 65 72 0D 0A
+    828	    01FD			 label InitMsg5	byte
+    829	    01FD  0000			 Written dw 0
+    830
+    831	    01FF			 codeseg
+    832	    0508			 proc bin2hex near
+    833					 ; convert binary to hex
+    834	    0508  F7 D1			   not cx ; wildcard mask
+    835	    050A			 label ConvertBinData near
+    836					 ; convert wildcard mask
+    837	    050A  C1 E1	04		   shl cx,4 ; wildcard
+    838	    050D  B0 23			   mov al,"#" ;	token
+    839	    050F  72 0F			   jc StoreCharacter
+    840					 ; convert binary data
+    841	    0511  8A C6			   mov al,dh ; byte data
+    842	    0513  C0 E8	04		   shr al,4 ; nibble data
+    843	    0516  3C 0A			   cmp al,10 ; character
+    844	    0518  72 04			   jb NotCharacter
+    845					 ; convert to character
+    846	    051A  04 37			   add al,"A"-0Ah ; ascii
+    847	    051C  EB 02			   jmp StoreCharacter
+    848	    051E			 label NotCharacter near
+    849					 ; convert to decimal
+    850	    051E  04 30			   add al,"0"-00h ; ascii
+    851	    0520			 label StoreCharacter near
+    852	    0520  88 04			   mov [ds:si],al ; store
+    853	    0522  46			   inc si ; next position
+    854	    0523  C1 E2	04		   shl dx,4 ; next nibble
+    855	    0526  75 E2			   jnz ConvertBinData
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 16
 usbecd.asm
 
 
 
-    856	    0528			 label EndBin2hex near
-    857	    0528  C3			   ret ; return
-    858	    0529			 endp bin2hex
-    859
-    860	    0529			 codeseg
-    861	    0529			 proc chr2ddn near
-    862					 ; convert char	to ddname
-    863	    0529  33 F6			   xor si,si ; first position
-    864	    052B			 label UpdateDriverName	near
-    865	    052B  47			   inc di ; next position
-    866	    052C  26: 8A 05		   mov al,[es:di] ; obtain
-    867					 ; validate character
-    868	    052F  3C 21			   cmp al,"!" ;	control
-    869	    0531  72 36			   jb EndChr2ddn ; reject
-    870	    0533  3C 22			   cmp al,'"' ;	special
-    871	    0535  74 32			   je EndChr2ddn ; reject
-    872	    0537  3C 2A			   cmp al,"*" ;	special
-    873	    0539  74 2E			   je EndChr2ddn ; reject
-    874	    053B  3C 2E			   cmp al,"." ;	special
-    875	    053D  74 2A			   je EndChr2ddn ; reject
-    876	    053F  3C 2F			   cmp al,"/" ;	special
-    877	    0541  74 26			   je EndChr2ddn ; reject
-    878	    0543  3C 3A			   cmp al,":" ;	special
-    879	    0545  74 22			   je EndChr2ddn ; reject
-    880	    0547  3C 3C			   cmp al,"<" ;	special
-    881	    0549  74 1E			   je EndChr2ddn ; reject
-    882	    054B  3C 3E			   cmp al,">" ;	special
-    883	    054D  74 1A			   je EndChr2ddn ; reject
-    884	    054F  3C 3F			   cmp al,"?" ;	special
-    885	    0551  74 16			   je EndChr2ddn ; reject
-    886	    0553  3C 5C			   cmp al,"\" ;	special
-    887	    0555  74 12			   je EndChr2ddn ; reject
-    888	    0557  3C 7C			   cmp al,"|" ;	special
-    889	    0559  74 0E			   je EndChr2ddn ; reject
-    890					 ; update ddname character
-    891	    055B  88 84	000Ar		   mov [hdrddn+si],al ;	set
-    892	    055F  88 84	015Fr		   mov [msgddn+si],al ;	set
-    893	    0563  46			   inc si ; next position
-    894	    0564  83 FE	08		   cmp si,8 ; maximum
-    895	    0567  72 C2			   jb UpdateDriverName
-    896	    0569			 label EndChr2ddn near
-    897	    0569  C3			   ret ; return
-    898	    056A			 endp chr2ddn
-    899
-    900	    056A			 codeseg
-    901	    056A			 proc hex2bin near
-    902					 ; convert hex to binary
-    903	    056A  33 D2			   xor dx,dx ; binary output
-    904	    056C  33 C9			   xor cx,cx ; wildcard	mask
-    905	    056E			 label ConvertHexData near
-    906	    056E  47			   inc di ; next position
-    907	    056F  26: 8A 05		   mov al,[es:di] ; obtain
-    908					 ; convert decimal digit
-    909	    0572  3C 30			   cmp al,"0" ;	min
-    910	    0574  72 10			   jb NotDecimal
-    911	    0576  3C 39			   cmp al,"9" ;	max
-    912	    0578  77 0C			   ja NotDecimal
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 17
+    856	    0528  85 C9			   test	cx,cx ;	any mask
+    857	    052A  75 DE			   jnz ConvertBinData
+    858	    052C			 label EndBin2hex near
+    859	    052C  C3			   ret ; return
+    860	    052D			 endp bin2hex
+    861
+    862	    052D			 codeseg
+    863	    052D			 proc chr2ddn near
+    864					 ; convert char	to ddname
+    865	    052D  33 F6			   xor si,si ; first position
+    866	    052F			 label UpdateDriverName	near
+    867	    052F  47			   inc di ; next position
+    868	    0530  26: 8A 05		   mov al,[es:di] ; obtain
+    869					 ; validate character
+    870	    0533  3C 21			   cmp al,"!" ;	control
+    871	    0535  72 36			   jb EndChr2ddn ; reject
+    872	    0537  3C 22			   cmp al,'"' ;	special
+    873	    0539  74 32			   je EndChr2ddn ; reject
+    874	    053B  3C 2A			   cmp al,"*" ;	special
+    875	    053D  74 2E			   je EndChr2ddn ; reject
+    876	    053F  3C 2E			   cmp al,"." ;	special
+    877	    0541  74 2A			   je EndChr2ddn ; reject
+    878	    0543  3C 2F			   cmp al,"/" ;	special
+    879	    0545  74 26			   je EndChr2ddn ; reject
+    880	    0547  3C 3A			   cmp al,":" ;	special
+    881	    0549  74 22			   je EndChr2ddn ; reject
+    882	    054B  3C 3C			   cmp al,"<" ;	special
+    883	    054D  74 1E			   je EndChr2ddn ; reject
+    884	    054F  3C 3E			   cmp al,">" ;	special
+    885	    0551  74 1A			   je EndChr2ddn ; reject
+    886	    0553  3C 3F			   cmp al,"?" ;	special
+    887	    0555  74 16			   je EndChr2ddn ; reject
+    888	    0557  3C 5C			   cmp al,"\" ;	special
+    889	    0559  74 12			   je EndChr2ddn ; reject
+    890	    055B  3C 7C			   cmp al,"|" ;	special
+    891	    055D  74 0E			   je EndChr2ddn ; reject
+    892					 ; update ddname character
+    893	    055F  88 84	000Ar		   mov [hdrddn+si],al ;	set
+    894	    0563  88 84	015Fr		   mov [msgddn+si],al ;	set
+    895	    0567  46			   inc si ; next position
+    896	    0568  83 FE	08		   cmp si,8 ; maximum
+    897	    056B  72 C2			   jb UpdateDriverName
+    898	    056D			 label EndChr2ddn near
+    899	    056D  C3			   ret ; return
+    900	    056E			 endp chr2ddn
+    901
+    902	    056E			 codeseg
+    903	    056E			 proc hex2bin near
+    904					 ; convert hex to binary
+    905	    056E  33 D2			   xor dx,dx ; binary output
+    906	    0570  33 C9			   xor cx,cx ; wildcard	mask
+    907	    0572			 label ConvertHexData near
+    908	    0572  47			   inc di ; next position
+    909	    0573  26: 8A 05		   mov al,[es:di] ; obtain
+    910					 ; convert decimal digit
+    911	    0576  3C 30			   cmp al,"0" ;	min
+    912	    0578  72 10			   jb NotDecimal
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 17
 usbecd.asm
 
 
 
-    913	    057A  2C 30			   sub al,"0"-00h
-    914	    057C  C1 E2	04		   shl dx,4 ; output
-    915	    057F  32 D0			   xor dl,al ; supply
-    916	    0581  C1 E1	04		   shl cx,4 ; ticket
-    917	    0584  EB E8			   jmp ConvertHexData
-    918	    0586			 label NotDecimal near
-    919					 ; convert character
-    920	    0586  3C 41			   cmp al,"A" ;	min
-    921	    0588  72 10			   jb NotHex2bin
-    922	    058A  3C 46			   cmp al,"F" ;	max
-    923	    058C  77 0C			   ja NotHex2bin
-    924	    058E  2C 37			   sub al,"A"-0Ah
-    925	    0590  C1 E2	04		   shl dx,4 ; output
-    926	    0593  32 D0			   xor dl,al ; supply
-    927	    0595  C1 E1	04		   shl cx,4 ; ticket
-    928	    0598  EB D4			   jmp ConvertHexData
-    929	    059A			 label NotHex2bin near
-    930					 ; convert wildcard
-    931	    059A  3C 23			   cmp al,"#" ;	token
-    932	    059C  75 0B			   jne EndHex2bin
-    933	    059E  C1 E1	04		   shl cx,4 ; ticket
-    934	    05A1  80 F1	0F		   xor cl,0Fh ;	token
-    935	    05A4  C1 E2	04		   shl dx,4 ; output
-    936	    05A7  EB C5			   jmp ConvertHexData
-    937	    05A9			 label EndHex2bin near
-    938					 ; prepare wildcard
-    939	    05A9  F7 D1			   not cx ; mask
-    940	    05AB  C3			   ret ; return
-    941	    05AC			 endp hex2bin
-    942
-    943	    05AC			 codeseg
-    944	    05AC			 proc Initialize near
-    945					 ; address driver parameters
-    946	    05AC  06			   push	es ; save register
-    947	    05AD  26: C4 7F 12		   les di,[dword(es:bx+18)]
-    948	    05B1			 label ScanParmString near
-    949					 ; search for forward slash
-    950	    05B1  26: 8A 05		   mov al,[es:di] ; data
-    951	    05B4  47			   inc di ; next position
-    952	    05B5  3C 00			   cmp al,00h ;	terminator
-    953	    05B7  0F 84	0081		   je EndScanParmString
-    954	    05BB  3C 2F			   cmp al,"/" ;	parameter
-    955	    05BD  75 F2			   jne ScanParmString
-    956					 ; obtain /D: parameter
-    957	    05BF  26: 80 3D 44		   cmp [byte(es:di)],"D"
-    958	    05C3  75 48			   jne NotParmDevice
-    959	    05C5  47			   inc di ; next position
-    960	    05C6  26: 80 3D 3A		   cmp [byte(es:di)],":"
-    961	    05CA  75 E5			   jne ScanParmString
-    962					 ; update vendor specification
-    963	    05CC  E8 FF9B		   call	hex2bin	; obtain vendor
-    964	    05CF  89 16	0032r		   mov [adsvid],dx ; spec idVendor
-    965	    05D3  89 0E	0038r		   mov [adxvid],cx ; mask idVendor
-    966	    05D7  BE 014Dr		   mov si,offset(msgvid) ; vendor
-    967	    05DA  E8 FF27		   call	bin2hex	; supply vendor
-    968	    05DD  26: 80 3D 3A		   cmp [byte(es:di)],":"
-    969	    05E1  75 CE			   jne ScanParmString
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 18
+    913	    057A  3C 39			   cmp al,"9" ;	max
+    914	    057C  77 0C			   ja NotDecimal
+    915	    057E  2C 30			   sub al,"0"-00h
+    916	    0580  C1 E2	04		   shl dx,4 ; output
+    917	    0583  32 D0			   xor dl,al ; supply
+    918	    0585  C1 E1	04		   shl cx,4 ; ticket
+    919	    0588  EB E8			   jmp ConvertHexData
+    920	    058A			 label NotDecimal near
+    921					 ; convert character
+    922	    058A  3C 41			   cmp al,"A" ;	min
+    923	    058C  72 10			   jb NotHex2bin
+    924	    058E  3C 46			   cmp al,"F" ;	max
+    925	    0590  77 0C			   ja NotHex2bin
+    926	    0592  2C 37			   sub al,"A"-0Ah
+    927	    0594  C1 E2	04		   shl dx,4 ; output
+    928	    0597  32 D0			   xor dl,al ; supply
+    929	    0599  C1 E1	04		   shl cx,4 ; ticket
+    930	    059C  EB D4			   jmp ConvertHexData
+    931	    059E			 label NotHex2bin near
+    932					 ; convert wildcard
+    933	    059E  3C 23			   cmp al,"#" ;	token
+    934	    05A0  75 0B			   jne EndHex2bin
+    935	    05A2  C1 E1	04		   shl cx,4 ; ticket
+    936	    05A5  80 F1	0F		   xor cl,0Fh ;	token
+    937	    05A8  C1 E2	04		   shl dx,4 ; output
+    938	    05AB  EB C5			   jmp ConvertHexData
+    939	    05AD			 label EndHex2bin near
+    940					 ; prepare wildcard
+    941	    05AD  F7 D1			   not cx ; mask
+    942	    05AF  C3			   ret ; return
+    943	    05B0			 endp hex2bin
+    944
+    945	    05B0			 codeseg
+    946	    05B0			 proc Initialize near
+    947					 ; address driver parameters
+    948	    05B0  06			   push	es ; save register
+    949	    05B1  26: C4 7F 12		   les di,[dword(es:bx+18)]
+    950	    05B5			 label ScanParmString near
+    951					 ; search for forward slash
+    952	    05B5  26: 8A 05		   mov al,[es:di] ; data
+    953	    05B8  47			   inc di ; next position
+    954	    05B9  3C 00			   cmp al,00h ;	terminator
+    955	    05BB  0F 84	0081		   je EndScanParmString
+    956	    05BF  3C 2F			   cmp al,"/" ;	parameter
+    957	    05C1  75 F2			   jne ScanParmString
+    958					 ; obtain /D: parameter
+    959	    05C3  26: 80 3D 44		   cmp [byte(es:di)],"D"
+    960	    05C7  75 48			   jne NotParmDevice
+    961	    05C9  47			   inc di ; next position
+    962	    05CA  26: 80 3D 3A		   cmp [byte(es:di)],":"
+    963	    05CE  75 E5			   jne ScanParmString
+    964					 ; update vendor specification
+    965	    05D0  E8 FF9B		   call	hex2bin	; obtain vendor
+    966	    05D3  89 16	0032r		   mov [adsvid],dx ; spec idVendor
+    967	    05D7  89 0E	0038r		   mov [adxvid],cx ; mask idVendor
+    968	    05DB  BE 014Dr		   mov si,offset(msgvid) ; vendor
+    969	    05DE  E8 FF27		   call	bin2hex	; supply vendor
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 18
 usbecd.asm
 
 
 
-    970					 ; update product specification
-    971	    05E3  E8 FF84		   call	hex2bin	; obtain product
-    972	    05E6  89 16	0034r		   mov [adspid],dx ; spec idProduct
-    973	    05EA  89 0E	003Ar		   mov [adxpid],cx ; mask idProduct
-    974	    05EE  BE 0152r		   mov si,offset(msgpid) ; product
-    975	    05F1  E8 FF10		   call	bin2hex	; supply product
-    976	    05F4  26: 80 3D 3A		   cmp [byte(es:di)],":"
-    977	    05F8  75 B7			   jne ScanParmString
-    978					 ; update release specification
-    979	    05FA  E8 FF6D		   call	hex2bin	; obtain release
-    980	    05FD  89 16	0036r		   mov [adsdrn],dx ; spec bcdDevice
-    981	    0601  89 0E	003Cr		   mov [adxdrn],cx ; mask bcdDevice
-    982	    0605  BE 0157r		   mov si,offset(msgdrn) ; release
-    983	    0608  E8 FEF9		   call	bin2hex	; supply release
-    984	    060B  EB A4			   jmp ScanParmString
-    985	    060D			 label NotParmDevice near
-    986					 ; obtain /N: parameter
-    987	    060D  26: 80 3D 4E		   cmp [byte(es:di)],"N"
-    988	    0611  75 0C			   jne NotParmDriver
-    989	    0613  47			   inc di ; next position
-    990	    0614  26: 80 3D 3A		   cmp [byte(es:di)],":"
-    991	    0618  75 97			   jne ScanParmString
-    992					 ; update driver ddname
-    993	    061A  E8 FF0C		   call	chr2ddn	; update
-    994	    061D  EB 92			   jmp ScanParmString
-    995	    061F			 label NotParmDriver near
-    996					 ; obtain /S parameter
-    997	    061F  26: 80 3D 53		   cmp [byte(es:di)],"S"
-    998	    0623  75 07			   jne NotParmSilent
-    999					 ; update silence flag
-   1000	    0625  C6 06	0121r 01	   mov [flsilence],1
-   1001	    062A  EB 85			   jmp ScanParmString
-   1002	    062C			 label NotParmSilent near
-   1003					 ; obtain /V parameter
-   1004	    062C  26: 80 3D 56		   cmp [byte(es:di)],"V"
-   1005	    0630  0F 85	FF7D		   jne ScanParmString
-   1006					 ; update verbose flag
-   1007	    0634  C6 06	0136r 01	   mov [flverbose],1
-   1008	    0639  E9 FF75		   jmp ScanParmString
-   1009	    063C			 label EndScanParmString near
-   1010	    063C  07			   pop es ; restore register
-   1011					 ; save	devhlp entry point
-   1012	    063D  26: 8B 47 0E		   mov ax,[es:bx+14]
-   1013	    0641  A3 001Er		   mov [word(devhlp+00)],ax
-   1014	    0644  26: 8B 47 10		   mov ax,[es:bx+16]
-   1015	    0648  A3 0020r		   mov [word(devhlp+02)],ax
-   1016					 ; reduce module size
-   1017	    064B  B8 0504r		   mov ax,offset(EndCode)
-   1018	    064E  26: 89 47 0E		   mov [es:bx+14],ax
-   1019	    0652  B8 0136r		   mov ax,offset(EndData)
-   1020	    0655  26: 89 47 10		   mov [es:bx+16],ax
-   1021					 ; write startup message
-   1022	    0659  BE 0029		   mov si,InitMsg1-InitMsg0
-   1023	    065C  BF 013Fr		   mov di,offset(InitMsg0)
-   1024	    065F			 label ReduceLength near
-   1025	    065F  4E			   dec si ; use	offset
-   1026	    0660  80 BC	013Fr 20	   cmp [InitMsg0+si]," "
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 19
+    970	    05E1  26: 80 3D 3A		   cmp [byte(es:di)],":"
+    971	    05E5  75 CE			   jne ScanParmString
+    972					 ; update product specification
+    973	    05E7  E8 FF84		   call	hex2bin	; obtain product
+    974	    05EA  89 16	0034r		   mov [adspid],dx ; spec idProduct
+    975	    05EE  89 0E	003Ar		   mov [adxpid],cx ; mask idProduct
+    976	    05F2  BE 0152r		   mov si,offset(msgpid) ; product
+    977	    05F5  E8 FF10		   call	bin2hex	; supply product
+    978	    05F8  26: 80 3D 3A		   cmp [byte(es:di)],":"
+    979	    05FC  75 B7			   jne ScanParmString
+    980					 ; update release specification
+    981	    05FE  E8 FF6D		   call	hex2bin	; obtain release
+    982	    0601  89 16	0036r		   mov [adsdrn],dx ; spec bcdDevice
+    983	    0605  89 0E	003Cr		   mov [adxdrn],cx ; mask bcdDevice
+    984	    0609  BE 0157r		   mov si,offset(msgdrn) ; release
+    985	    060C  E8 FEF9		   call	bin2hex	; supply release
+    986	    060F  EB A4			   jmp ScanParmString
+    987	    0611			 label NotParmDevice near
+    988					 ; obtain /N: parameter
+    989	    0611  26: 80 3D 4E		   cmp [byte(es:di)],"N"
+    990	    0615  75 0C			   jne NotParmDriver
+    991	    0617  47			   inc di ; next position
+    992	    0618  26: 80 3D 3A		   cmp [byte(es:di)],":"
+    993	    061C  75 97			   jne ScanParmString
+    994					 ; update driver ddname
+    995	    061E  E8 FF0C		   call	chr2ddn	; update
+    996	    0621  EB 92			   jmp ScanParmString
+    997	    0623			 label NotParmDriver near
+    998					 ; obtain /S parameter
+    999	    0623  26: 80 3D 53		   cmp [byte(es:di)],"S"
+   1000	    0627  75 07			   jne NotParmSilent
+   1001					 ; update silence flag
+   1002	    0629  C6 06	0121r 01	   mov [flsilence],1
+   1003	    062E  EB 85			   jmp ScanParmString
+   1004	    0630			 label NotParmSilent near
+   1005					 ; obtain /V parameter
+   1006	    0630  26: 80 3D 56		   cmp [byte(es:di)],"V"
+   1007	    0634  0F 85	FF7D		   jne ScanParmString
+   1008					 ; update verbose flag
+   1009	    0638  C6 06	0136r 01	   mov [flverbose],1
+   1010	    063D  E9 FF75		   jmp ScanParmString
+   1011	    0640			 label EndScanParmString near
+   1012	    0640  07			   pop es ; restore register
+   1013					 ; save	devhlp entry point
+   1014	    0641  26: 8B 47 0E		   mov ax,[es:bx+14]
+   1015	    0645  A3 001Er		   mov [word(devhlp+00)],ax
+   1016	    0648  26: 8B 47 10		   mov ax,[es:bx+16]
+   1017	    064C  A3 0020r		   mov [word(devhlp+02)],ax
+   1018					 ; reduce module size
+   1019	    064F  B8 0508r		   mov ax,offset(EndCode)
+   1020	    0652  26: 89 47 0E		   mov [es:bx+14],ax
+   1021	    0656  B8 0136r		   mov ax,offset(EndData)
+   1022	    0659  26: 89 47 10		   mov [es:bx+16],ax
+   1023					 ; write startup message
+   1024	    065D  BE 0029		   mov si,InitMsg1-InitMsg0
+   1025	    0660  BF 013Fr		   mov di,offset(InitMsg0)
+   1026	    0663			 label ReduceLength near
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 19
 usbecd.asm
 
 
 
-   1027	    0665  74 F8			   je ReduceLength
-   1028	    0667  83 C6	02		   add si,2 ; length
-   1029	    066A  E8 006A		   call	IssueMessage
-   1030					 ; verify driver ddname
-   1031	    066D  53			   push	bx ; save register
-   1032	    066E  BB 000Ar		   mov bx,offset(hdrddn)
-   1033	    0671  BF 0026r		   mov di,offset(idcepi)
-   1034	    0674  B2 2A			   mov dl,2Ah ;	attachdd
-   1035	    0676  FF 1E	001Er		   call	[devhlp] ; helper
-   1036	    067A  5B			   pop bx ; restore register
-   1037	    067B  BE 0025		   mov si,InitMsg2-InitMsg1
-   1038	    067E  BF 0168r		   mov di,offset(InitMsg1)
-   1039	    0681  73 3D			   jnc InitFailure ; used
-   1040					 ; obtain USBD$	idc info
-   1041	    0683  53			   push	bx ; save register
-   1042	    0684  BB 0137r		   mov bx,offset(ddname)
-   1043	    0687  BF 0026r		   mov di,offset(idcepi)
-   1044	    068A  B2 2A			   mov dl,2Ah ;	attachdd
-   1045	    068C  FF 1E	001Er		   call	[devhlp] ; helper
-   1046	    0690  5B			   pop bx ; restore register
-   1047	    0691  BE 0028		   mov si,InitMsg3-InitMsg2
-   1048	    0694  BF 018Dr		   mov di,offset(InitMsg2)
-   1049	    0697  72 27			   jc InitFailure ; error
-   1050					 ; allocate 2 GDT selectors
-   1051	    0699  06			   push	es ; save register
-   1052	    069A  1E			   push	ds ; data selector
-   1053	    069B  07			   pop es ; selector(gdtsel)
-   1054	    069C  BF 0022r		   mov di,offset(gdtsel)
-   1055	    069F  B2 2D			   mov dl,2Dh ;	allocgdtselector
-   1056	    06A1  B9 0002		   mov cx,0002h	; 2 selectors
-   1057	    06A4  FF 1E	001Er		   call	[devhlp] ; helper
-   1058	    06A8  07			   pop es ; restore register
-   1059	    06A9  BE 0025		   mov si,InitMsg4-InitMsg3
-   1060	    06AC  BF 01B5r		   mov di,offset(InitMsg3)
-   1061	    06AF  72 0F			   jc InitFailure ; error
-   1062					 ; write success message
-   1063	    06B1  BE 0023		   mov si,InitMsg5-InitMsg4
-   1064	    06B4  BF 01DAr		   mov di,offset(InitMsg4)
-   1065	    06B7  E8 001D		   call	IssueMessage
-   1066					 ; set success status code
-   1067	    06BA  B8 0100		   mov ax,0100h	; ok/done
-   1068	    06BD  E9 FE3F		   jmp EndStrategy ; success
-   1069	    06C0			 label InitFailure near
-   1070					 ; indicate init failure
-   1071	    06C0  2B C0			   sub ax,ax ; ensure zeroes
-   1072	    06C2  26: 88 47 0D		   mov [es:bx+13],al ; data byte
-   1073	    06C6  26: 89 47 0E		   mov [es:bx+14],ax ; code size
-   1074	    06CA  26: 89 47 10		   mov [es:bx+16],ax ; data size
-   1075					 ; write failure message
-   1076	    06CE  E8 0006		   call	IssueMessage
-   1077					 ; set failure status code
-   1078	    06D1  B8 8115		   mov ax,8115h	; error/done/quiet
-   1079	    06D4  E9 FE28		   jmp EndStrategy ; failure
-   1080	    06D7			 endp Initialize
-   1081
-   1082	    06D7			 codeseg
-   1083	    06D7			 proc IssueMessage near
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 20
+   1027	    0663  4E			   dec si ; use	offset
+   1028	    0664  80 BC	013Fr 20	   cmp [InitMsg0+si]," "
+   1029	    0669  74 F8			   je ReduceLength
+   1030	    066B  83 C6	02		   add si,2 ; length
+   1031	    066E  E8 006A		   call	IssueMessage
+   1032					 ; verify driver ddname
+   1033	    0671  53			   push	bx ; save register
+   1034	    0672  BB 000Ar		   mov bx,offset(hdrddn)
+   1035	    0675  BF 0026r		   mov di,offset(idcepi)
+   1036	    0678  B2 2A			   mov dl,2Ah ;	attachdd
+   1037	    067A  FF 1E	001Er		   call	[devhlp] ; helper
+   1038	    067E  5B			   pop bx ; restore register
+   1039	    067F  BE 0025		   mov si,InitMsg2-InitMsg1
+   1040	    0682  BF 0168r		   mov di,offset(InitMsg1)
+   1041	    0685  73 3D			   jnc InitFailure ; used
+   1042					 ; obtain USBD$	idc info
+   1043	    0687  53			   push	bx ; save register
+   1044	    0688  BB 0137r		   mov bx,offset(ddname)
+   1045	    068B  BF 0026r		   mov di,offset(idcepi)
+   1046	    068E  B2 2A			   mov dl,2Ah ;	attachdd
+   1047	    0690  FF 1E	001Er		   call	[devhlp] ; helper
+   1048	    0694  5B			   pop bx ; restore register
+   1049	    0695  BE 0028		   mov si,InitMsg3-InitMsg2
+   1050	    0698  BF 018Dr		   mov di,offset(InitMsg2)
+   1051	    069B  72 27			   jc InitFailure ; error
+   1052					 ; allocate 2 GDT selectors
+   1053	    069D  06			   push	es ; save register
+   1054	    069E  1E			   push	ds ; data selector
+   1055	    069F  07			   pop es ; selector(gdtsel)
+   1056	    06A0  BF 0022r		   mov di,offset(gdtsel)
+   1057	    06A3  B2 2D			   mov dl,2Dh ;	allocgdtselector
+   1058	    06A5  B9 0002		   mov cx,0002h	; 2 selectors
+   1059	    06A8  FF 1E	001Er		   call	[devhlp] ; helper
+   1060	    06AC  07			   pop es ; restore register
+   1061	    06AD  BE 0025		   mov si,InitMsg4-InitMsg3
+   1062	    06B0  BF 01B5r		   mov di,offset(InitMsg3)
+   1063	    06B3  72 0F			   jc InitFailure ; error
+   1064					 ; write success message
+   1065	    06B5  BE 0023		   mov si,InitMsg5-InitMsg4
+   1066	    06B8  BF 01DAr		   mov di,offset(InitMsg4)
+   1067	    06BB  E8 001D		   call	IssueMessage
+   1068					 ; set success status code
+   1069	    06BE  B8 0100		   mov ax,0100h	; ok/done
+   1070	    06C1  E9 FE3F		   jmp EndStrategy ; success
+   1071	    06C4			 label InitFailure near
+   1072					 ; indicate init failure
+   1073	    06C4  2B C0			   sub ax,ax ; ensure zeroes
+   1074	    06C6  26: 88 47 0D		   mov [es:bx+13],al ; data byte
+   1075	    06CA  26: 89 47 0E		   mov [es:bx+14],ax ; code size
+   1076	    06CE  26: 89 47 10		   mov [es:bx+16],ax ; data size
+   1077					 ; write failure message
+   1078	    06D2  E8 0006		   call	IssueMessage
+   1079					 ; set failure status code
+   1080	    06D5  B8 8115		   mov ax,8115h	; error/done/quiet
+   1081	    06D8  E9 FE28		   jmp EndStrategy ; failure
+   1082	    06DB			 endp Initialize
+   1083
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 20
 usbecd.asm
 
 
 
-   1084					 ; issue message to stdout
-   1085	    06D7  80 3E	0136r 01	   cmp [flverbose],1 ; verbose
-   1086	    06DC  75 0E			   jne EndIssueMessage ; suppressed
-   1087					   call	Dos16Write pascal,0,ds,di,si,ds,offset(Written)
-1  1088	    06DE  6A 00				 PUSH	 0
-1  1089	    06E0  1E				 PUSH	 DS
-1  1090	    06E1  57				 PUSH	 DI
-1  1091	    06E2  56				 PUSH	 SI
-1  1092	    06E3  1E				 PUSH	 DS
-1  1093	    06E4  68 01FDr			 PUSH	 OFFSET(WRITTEN)
-1  1094	    06E7  9A 00000000se			 CALL	 DOS16WRITE
-   1095	    06EC			 label EndIssueMessage near
-   1096	    06EC  C3			   ret ; return
-   1097	    06ED			 endp IssueMessage
-   1098
-   1099					 end
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 21
+   1084	    06DB			 codeseg
+   1085	    06DB			 proc IssueMessage near
+   1086					 ; issue message to stdout
+   1087	    06DB  80 3E	0136r 01	   cmp [flverbose],1 ; verbose
+   1088	    06E0  75 0E			   jne EndIssueMessage ; suppressed
+   1089					   call	Dos16Write pascal,0,ds,di,si,ds,offset(Written)
+1  1090	    06E2  6A 00				 PUSH	 0
+1  1091	    06E4  1E				 PUSH	 DS
+1  1092	    06E5  57				 PUSH	 DI
+1  1093	    06E6  56				 PUSH	 SI
+1  1094	    06E7  1E				 PUSH	 DS
+1  1095	    06E8  68 01FDr			 PUSH	 OFFSET(WRITTEN)
+1  1096	    06EB  9A 00000000se			 CALL	 DOS16WRITE
+   1097	    06F0			 label EndIssueMessage near
+   1098	    06F0  C3			   ret ; return
+   1099	    06F1			 endp IssueMessage
+   1100
+   1101					 end
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 21
 Symbol Table
 
 
@@ -1205,9 +1207,9 @@ Symbol Table
 
 Symbol Name			  Type	 Value
 
-??DATE				  Text	 "10-09-13"
+??DATE				  Text	 "04-04-15"
 ??FILENAME			  Text	 "usbecd  "
-??TIME				  Text	 "09:43:44"
+??TIME				  Text	 "15:11:33"
 ??VERSION			  Number 0401
 @32BIT				  Text	 0
 @@OFFSET			  Number [DGROUP:BP+0006]
@@ -1225,48 +1227,48 @@ Symbol Name			  Type	 Value
 @WORDSIZE			  Text	 2
 ADAPROPER			  Word	 DGROUP:003E
 ADARECENT			  Word	 DGROUP:0040
-ADDMULTIPLE			  Near	 _TEXT:0204
+ADDMULTIPLE			  Near	 _TEXT:0208
 ADSDRN				  Word	 DGROUP:0036
 ADSPID				  Word	 DGROUP:0034
 ADSVID				  Word	 DGROUP:0032
 ADXDRN				  Word	 DGROUP:003C
 ADXPID				  Word	 DGROUP:003A
 ADXVID				  Word	 DGROUP:0038
-BIN2HEX				  Near	 _TEXT:0504
+BIN2HEX				  Near	 _TEXT:0508
 BUFFERNEXT			  Word	 DGROUP:0122
 BUFFERSIZE			  Word	 DGROUP:0124
-BULKINTERRUPT			  Near	 _TEXT:03F3
-CHECKBUFFER			  Near	 _TEXT:0252
-CHR2DDN				  Near	 _TEXT:0529
-CONTROLTRANSFER			  Near	 _TEXT:03BC
-CONVERTBINDATA			  Near	 _TEXT:0506
-CONVERTHEXDATA			  Near	 _TEXT:056E
+BULKINTERRUPT			  Near	 _TEXT:03F7
+CHECKBUFFER			  Near	 _TEXT:0256
+CHR2DDN				  Near	 _TEXT:052D
+CONTROLTRANSFER			  Near	 _TEXT:03C0
+CONVERTBINDATA			  Near	 _TEXT:050A
+CONVERTHEXDATA			  Near	 _TEXT:0572
 DDNAME				  Byte	 DGROUP:0137
 DEVBEEP				  Near	 _TEXT:0000
 DEVHLP				  Dword	 DGROUP:001E
 DOS16WRITE			  Far	 ----:---- Extern
-ENDBIN2HEX			  Near	 _TEXT:0528
-ENDCHR2DDN			  Near	 _TEXT:0569
-ENDCODE				  Near	 _TEXT:0504
+ENDBIN2HEX			  Near	 _TEXT:052C
+ENDCHR2DDN			  Near	 _TEXT:056D
+ENDCODE				  Near	 _TEXT:0508
 ENDDATA				  Byte	 DGROUP:0136
 ENDDEVBEEP			  Near	 _TEXT:0015
-ENDHEX2BIN			  Near	 _TEXT:05A9
+ENDHEX2BIN			  Near	 _TEXT:05AD
 ENDIDCENTRY			  Near	 _TEXT:010B
-ENDISSUEIOREQUEST		  Near	 _TEXT:0472
-ENDISSUEMESSAGE			  Near	 _TEXT:06EC
-ENDMULTIPLE			  Near	 _TEXT:0208
-ENDPROVIDEDIRECTION		  Near	 _TEXT:0405
-ENDPROVIDEREAD			  Near	 _TEXT:039C
+ENDISSUEIOREQUEST		  Near	 _TEXT:0476
+ENDISSUEMESSAGE			  Near	 _TEXT:06F0
+ENDMULTIPLE			  Near	 _TEXT:020C
+ENDPROVIDEDIRECTION		  Near	 _TEXT:0409
+ENDPROVIDEREAD			  Near	 _TEXT:03A0
 ENDPROVIDERESULT		  Near	 _TEXT:008A
-ENDSCANPARMSTRING		  Near	 _TEXT:063C
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 22
+ENDSCANPARMSTRING		  Near	 _TEXT:0640
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 22
 Symbol Table
 
 
 
-ENDSETUPDIRECTION		  Near	 _TEXT:01D6
-ENDSETUPTIMEOUT			  Near	 _TEXT:045B
-ENDSTRATEGY			  Near	 _TEXT:04FF
+ENDSETUPDIRECTION		  Near	 _TEXT:01DA
+ENDSETUPTIMEOUT			  Near	 _TEXT:045F
+ENDSTRATEGY			  Near	 _TEXT:0503
 ENDUPDATETOGGLE			  Near	 _TEXT:0086
 EVENTHANDLE			  Dword	 DGROUP:0126
 FLSILENCE			  Byte	 DGROUP:0121
@@ -1279,7 +1281,7 @@ HDRIDC				  Word	 DGROUP:0008
 HDRLNK				  Dword	 DGROUP:0000
 HDRRES				  Byte	 DGROUP:0012
 HDRSTR				  Word	 DGROUP:0006
-HEX2BIN				  Near	 _TEXT:056A
+HEX2BIN				  Near	 _TEXT:056E
 IDCDATSEL			  Word	 DGROUP:0063
 IDCENTRY			  Far	 _TEXT:0016
 IDCEPI				  Word	 DGROUP:0026
@@ -1313,55 +1315,55 @@ IDRREQEPT			  Word	 DGROUP:00EC
 IDRREQFLG			  Word	 DGROUP:00EE
 IDRSUPPLY			  Dword	 DGROUP:00DC
 IDRTARGET			  Dword	 DGROUP:0100
-INITFAILURE			  Near	 _TEXT:06C0
-INITIALIZE			  Near	 _TEXT:05AC
+INITFAILURE			  Near	 _TEXT:06C4
+INITIALIZE			  Near	 _TEXT:05B0
 INITMSG0			  Byte	 DGROUP:013F
 INITMSG1			  Byte	 DGROUP:0168
 INITMSG2			  Byte	 DGROUP:018D
 INITMSG3			  Byte	 DGROUP:01B5
 INITMSG4			  Byte	 DGROUP:01DA
 INITMSG5			  Byte	 DGROUP:01FD
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 23
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 23
 Symbol Table
 
 
 
-ISSUEIOCONTROL			  Near	 _TEXT:016E
-ISSUEIOREQUEST			  Near	 _TEXT:0358
-ISSUEISOREQUEST			  Near	 _TEXT:0475
-ISSUEMESSAGE			  Near	 _TEXT:06D7
+ISSUEIOCONTROL			  Near	 _TEXT:0172
+ISSUEIOREQUEST			  Near	 _TEXT:035C
+ISSUEISOREQUEST			  Near	 _TEXT:0479
+ISSUEMESSAGE			  Near	 _TEXT:06DB
 LOCKHANDLE			  Byte	 DGROUP:012A
 MSGDDN				  Byte	 DGROUP:015F
 MSGDRN				  Byte	 DGROUP:0157
 MSGPID				  Byte	 DGROUP:0152
 MSGVID				  Byte	 DGROUP:014D
 NOTATTACHED			  Near	 _TEXT:00EE
-NOTCHARACTER			  Near	 _TEXT:051A
-NOTCONTROLTRANSFER		  Near	 _TEXT:03E2
-NOTDECIMAL			  Near	 _TEXT:0586
-NOTDOSDEVIOCTL			  Near	 _TEXT:04DB
-NOTDOSREAD			  Near	 _TEXT:04D1
-NOTDOSWRITE			  Near	 _TEXT:04B4
-NOTHEX2BIN			  Near	 _TEXT:059A
-NOTINITCOMPLETE			  Near	 _TEXT:04F8
+NOTCHARACTER			  Near	 _TEXT:051E
+NOTCONTROLTRANSFER		  Near	 _TEXT:03E6
+NOTDECIMAL			  Near	 _TEXT:058A
+NOTDOSDEVIOCTL			  Near	 _TEXT:04DF
+NOTDOSREAD			  Near	 _TEXT:04D5
+NOTDOSWRITE			  Near	 _TEXT:04B8
+NOTHEX2BIN			  Near	 _TEXT:059E
+NOTINITCOMPLETE			  Near	 _TEXT:04FC
 NOTINTERRUPT			  Near	 _TEXT:0099
-NOTISOCLOSE			  Near	 _TEXT:0320
+NOTISOCLOSE			  Near	 _TEXT:0324
 NOTISOINTERRUPT			  Near	 _TEXT:0050
-NOTISOOPEN			  Near	 _TEXT:02ED
-NOTISSUEIOREQUEST		  Near	 _TEXT:0474
-NOTPARMDEVICE			  Near	 _TEXT:060D
-NOTPARMDRIVER			  Near	 _TEXT:061F
-NOTPARMSILENT			  Near	 _TEXT:062C
-PROCESSISOCLOSE			  Near	 _TEXT:02F7
-PROCESSISOOPEN			  Near	 _TEXT:0184
-PROCESSREQUEST			  Near	 _TEXT:0338
-REDUCELENGTH			  Near	 _TEXT:065F
+NOTISOOPEN			  Near	 _TEXT:02F1
+NOTISSUEIOREQUEST		  Near	 _TEXT:0478
+NOTPARMDEVICE			  Near	 _TEXT:0611
+NOTPARMDRIVER			  Near	 _TEXT:0623
+NOTPARMSILENT			  Near	 _TEXT:0630
+PROCESSISOCLOSE			  Near	 _TEXT:02FB
+PROCESSISOOPEN			  Near	 _TEXT:0188
+PROCESSREQUEST			  Near	 _TEXT:033C
+REDUCELENGTH			  Near	 _TEXT:0663
 REGCTCFNC			  Byte	 DGROUP:004F
 REGHEADER			  Byte	 DGROUP:0042
 REGOBTAIN			  Word	 DGROUP:0055
 REGSUPPLY			  Dword	 DGROUP:0051
-REQUESTISOCLOSE			  Near	 _TEXT:0300
-SCANPARMSTRING			  Near	 _TEXT:05B1
+REQUESTISOCLOSE			  Near	 _TEXT:0304
+SCANPARMSTRING			  Near	 _TEXT:05B5
 SDRBUFAD1			  Dword	 DGROUP:0088
 SDRBUFAD2			  Dword	 DGROUP:008E
 SDRBUFSZ1			  Word	 DGROUP:008C
@@ -1381,31 +1383,31 @@ SDRREQEPT			  Word	 DGROUP:0084
 SDRREQFLG			  Word	 DGROUP:0086
 SDRSUPPLY			  Dword	 DGROUP:0074
 SDRTARGET			  Dword	 DGROUP:0098
-SET2NDBUFFER			  Near	 _TEXT:0217
-SETBUFFERADDRESS		  Near	 _TEXT:034B
-Turbo Assembler	 Version 4.1	    10-09-13 09:43:44	    Page 24
+SET2NDBUFFER			  Near	 _TEXT:021B
+SETBUFFERADDRESS		  Near	 _TEXT:034F
+Turbo Assembler	 Version 4.1	    04-04-15 15:11:33	    Page 24
 Symbol Table
 
 
 
-SETFIXEDTIMEOUT			  Near	 _TEXT:0459
-SETISOFAILURE			  Near	 _TEXT:019A
-SETISOSUCCESS			  Near	 _TEXT:031C
+SETFIXEDTIMEOUT			  Near	 _TEXT:045D
+SETISOFAILURE			  Near	 _TEXT:019E
+SETISOSUCCESS			  Near	 _TEXT:0320
 SETPARMPACKET			  Near	 _TEXT:006D
-STARTTRANSFER			  Near	 _TEXT:0413
-STORECHARACTER			  Near	 _TEXT:051C
-STRATEGY			  Far	 _TEXT:048B
+STARTTRANSFER			  Near	 _TEXT:0417
+STORECHARACTER			  Near	 _TEXT:0520
+STRATEGY			  Far	 _TEXT:048F
 TDRCTCFNC			  Byte	 DGROUP:00BD
 TDRHEADER			  Byte	 DGROUP:00B0
 TDROBTAIN			  Word	 DGROUP:00C3
 TDRSUPPLY			  Dword	 DGROUP:00BF
-UPDATEDRIVERNAME		  Near	 _TEXT:052B
-VERIFYPARMBUFFER		  Near	 _TEXT:019E
+UPDATEDRIVERNAME		  Near	 _TEXT:052F
+VERIFYPARMBUFFER		  Near	 _TEXT:01A2
 WRITTEN				  Word	 DGROUP:01FD
 
 Groups & Segments		  Bit Size Align  Combine Class
 
 DGROUP				  Group
   _DATA				  16  01FF Word	  Public  DATA
-_TEXT				  16  06ED Word	  Public  CODE
+_TEXT				  16  06F1 Word	  Public  CODE
 
