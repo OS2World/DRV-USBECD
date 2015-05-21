@@ -5,7 +5,7 @@ This driver enables you to directly control usb devices.
 
 LICENSE
 ===============
-* Non Commercial use. 
+* ISC License
 
 COMPILE TOOLS
 ===============
