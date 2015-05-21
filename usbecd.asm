@@ -45,7 +45,7 @@ adarecent dw 0 ; last device
 
 dataseg
 ; register class driver request
-regheader db 0,0,10h,0,0,0,0,0,0,0,0,0,0
+regheader db 0,0,0Ch,0,0,0,0,0,0,0,0,0,0
 regctcfnc db 91h,43h ; usbd register
 regsupply dd idctarget
 regobtain dw 0,0,0,0,0
@@ -55,7 +55,7 @@ idcdatsel dw @data
 
 dataseg
 ; standard device request
-sdrheader db 0,0,10h,0,0,0,0,0,0,0,0,0,0
+sdrheader db 0,0,0Ch,0,0,0,0,0,0,0,0,0,0
 sdrctcfnc db 91h,41h ; usbd acceptio
 sdrsupply dd sdrreqblk
 sdrobtain dw 0,0,0,0,0
@@ -78,14 +78,14 @@ sdrnxtblk dd 0
 
 dataseg
 ; terminate device request
-tdrheader db 0,0,10h,0,0,0,0,0,0,0,0,0,0
+tdrheader db 0,0,0Ch,0,0,0,0,0,0,0,0,0,0
 tdrctcfnc db 91h,42h ; usbd cancelio
 tdrsupply dd sdrreqblk
 tdrobtain dw 0,0,0,0,0
 
 dataseg
 ; isochronous device request
-idrheader db 0,0,10h,0,0,0,0,0,0,0,0,0,0
+idrheader db 0,0,0Ch,0,0,0,0,0,0,0,0,0,0
 idrctcfnc db 91h,41h ; usbd acceptio
 idrsupply dd idrreqblk
 idrobtain dw 0,0,0,0,0
@@ -141,14 +141,22 @@ arg @@offset,@@selector
   cmp [byte(es:bx+02)],10h
   mov ax,8113h ; error/done/parm
   jne EndIdcEntry ; failure
-; check usb class function code
-  cmp [byte(es:bx+13)],92h
+; handle filter operation
+  mov cx,[es:bx+13] ; function
+  cmp cl,91h ; usbd category
+  jne NotApplyFilter ; other
+; filter set configuration
+  cmp ch,48h ; usbd setconf
+  jne EndIdcEntry ; continue
+  jmp IdcGoodStatus ; done
+label NotApplyFilter near
+; check category class code
+  cmp cl,92h ; class category
   jne EndIdcEntry ; failure
 ; access parameter buffer
   lfs di,[dword(es:bx+15)]
 ; handle process complete
-  mov cl,[es:bx+14] ; function
-  cmp cl,44h ; process irq
+  cmp ch,44h ; process irq
   jne NotInterrupt ; other
 ; check isochronous interrupt
   cmp [byte(fs:di+29)],1 ; iso
@@ -195,43 +203,49 @@ label EndProvideResult near
   mov dl,05h ; release
   call [devhlp] ; helper
   pop bx ; restore register
-  jmp IdcGoodStatus
+  jmp IdcGoodStatus ; done
 label NotInterrupt near
 ; handle device attached
-  cmp cl,45h ; check service
+  cmp ch,45h ; check service
   jne NotAttached ; other
 ; access device information
-  lfs di,[dword(fs:di+00)]
+  lgs si,[dword(fs:di+00)]
 ; retain last device address
-  mov cx,[word(fs:di+00)]
+  mov cx,[word(gs:si+00)]
   mov [adarecent],cx ; address
 ; verify device not present
   cmp [adaproper],0 ; absent
   mov ax,0119h ; done/rejected
   jne EndIdcEntry ; present
 ; verify attached device
-  mov dx,[word(fs:di+28)]
+  mov dx,[word(gs:si+28)]
   and dx,[adxvid] ; idVendor
   cmp dx,[adsvid] ; idVendor
   jne EndIdcEntry ; reject
-  mov dx,[word(fs:di+30)]
+  mov dx,[word(gs:si+30)]
   and dx,[adxpid] ; idProduct
   cmp dx,[adspid] ; idProduct
   jne EndIdcEntry ; reject
-  mov dx,[word(fs:di+32)]
+  mov dx,[word(gs:si+32)]
   and dx,[adxdrn] ; bcdDevice
   cmp dx,[adsdrn] ; bcdDevice
   jne EndIdcEntry ; reject
 ; mark device configured
-  mov al,[byte(fs:di+43)]
-  mov [byte(fs:di+02)],al
+  mov al,[byte(gs:si+43)]
+  mov [byte(gs:si+02)],al
+; access filter information
+  lgs si,[dword(fs:di+04)]
+; register as filter driver
+  mov edx,[idctarget] ; hook
+  mov [dword(gs:si+00)],edx
+  mov [word(gs:si+04)],@data
 ; retain good device address
   mov [adaproper],cx ; address
   call DevBeep ; attach alert
   jmp IdcGoodStatus ; done
 label NotAttached near
 ; handle device detached
-  cmp cl,46h ; detach device
+  cmp ch,46h ; detach device
   jne EndIdcEntry ; failure
 ; verify this device present
   mov cx,[word(fs:di+00)]
@@ -352,9 +366,9 @@ label VerifyParmBuffer near
   mov [idrreqept],ax
 ; setup transfer direction
   cmp al,80h ; device-to-host
-  mov al,21h ; device-to-host ;*
+  mov al,21h ; device-to-host
   jnb EndSetupDirection ; no
-  mov al,22h ; host-to-device ;*
+  mov al,22h ; host-to-device
 label EndSetupDirection near
   mov [byte(idrreqflg)],al
 ; check iso frame length

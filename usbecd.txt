@@ -1,20 +1,15 @@
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD21.ZIP ³
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD22.ZIP ³
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
- Provides a device driver to directly control classless usb devices attached
+³Provides a usb filter device driver to directly control usb devices attached
  to an OS/2 system. Has been specifically designed to ease the development and
  test of simple homemade usb devices under OS/2. Uses standard/vendor control
  transfers and data (bulk/interrupt) transfers. The hybrid control interface
  supports isochronous transfers with 1 endpoint. Made in Holland by Wim Brul.
 
- Consists of USBECD.TXT (this text file), USBECD.SYS (the device driver),
- USBREAD.CMD (the inquiry) and USBWRITE.CMD (a direct control example).
-
- May be freely used and exchanged, as long as it is not modified. You may
- use this product solely at your own risk. I cannot be held responsible for
- any damages occurring due to your using this product. You may not lease,
- rent or sell this product to any other party. Have fun.
+³Open Source product with its ISC license contained in the LICENSE file.
+³Source Code at http://home.hccnet.nl/w.m.brul/usbprobe/usbecd22s.zip
 
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
 ³ Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
@@ -35,7 +30,7 @@
 ³ Installation ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
- Move the USBECD21.ZIP file into a directory of your choice and unzip it.
+ Move the USBECD22.ZIP file into a directory of your choice and unzip it.
  Copy the USBECD.SYS file to your C:\OS2\BOOT\ directory. Add the device
  driver to the CONFIG.SYS file with the DEVICE=C:\OS2\BOOT\USBECD.SYS
  statement and restart your system. Attach the usb device that you want to
@@ -277,7 +272,7 @@
  Request completes, this semaphore will be posted. The bEndpointAddress field
  must be copied from bEndpointAddress of the corresponding endpoint descriptor.
  The bAlternateSetting value must be taken from the bAlternateSetting of the
-|corresponding interface descriptor. The wMaxPacketSize value must be copied
+ corresponding interface descriptor. The wMaxPacketSize value must be copied
  from the wMaxPacketSize field of the corresponding endpoint descriptor.
  The wIsoBufferLength and wIsoBufferCount values must be set such that
  wIsoBufferLength*wIsoBufferCount bytes fit within the data buffer.
@@ -288,14 +283,14 @@
  ³         hEventSem ³ event semaphore handle ³
  ³  bEndpointAddress ³ endpoint address       ³
  ³ bAlternateSetting ³ alternative setting    ³
-|³    wMaxPacketSize ³ maximum payload size   ³
+ ³    wMaxPacketSize ³ maximum payload size   ³
  ³  wIsoBufferLength ³ size of one iso buffer ³
  ³   wIsoBufferCount ³ number of iso buffers  ³
  ³    wIsoFrameCount ³ number of iso frames   ³
  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
                 Parameter Buffer
 
-|Set wIsoFrameLength to (wMaxPacketSize&7FF)*(((wMaxPacketSize&0x1800)>>11)+1).
+ Set wIsoFrameLength to (wMaxPacketSize&7FF)*(((wMaxPacketSize&0x1800)>>11)+1).
 
  Set wIsoFrameCount to (wIsoBufferLength-4)/(wIsoFrameLength+2) to transfer
  individual frames. The data area in each iso buffer starts with a frame data

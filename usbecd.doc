@@ -1,24 +1,20 @@
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD21S.ZIP ³
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD22S.ZIP ³
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
- Provides a device driver to directly control classless usb devices attached
+³Provides a usb filter device driver to directly control usb devices attached
  to an OS/2 system. Has been specifically designed to ease the development and
  test of simple homemade usb devices under OS/2. Uses standard/vendor control
  transfers and data (bulk/interrupt) transfers. The hybrid control interface
  supports isochronous transfers with 1 endpoint. Made in Holland by Wim Brul.
 
- ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
- ³ Contains the source code of the USB 2.0 Extended Control Driver for OS/2. ³
- ³ Contains 2 sample applications written in C and 3 sample REXX procedures. ³
-³³ Contains 3 test applications written in Borland Turbo Assembler for OS/2. ³
- ³ Contains 2 documentation files: usbecd.doc (this file) and usbecd.txt.    ³
- ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ Contains the Source Code of the USB 2.0 Extended Control Driver for OS/2.
+ Contains 2 sample applications written in C and 3 sample REXX procedures.
+ Contains 3 test applications written in Borland Turbo Assembler for OS/2.
+ Contains 2 documentation files: usbecd.doc (this file) and usbecd.txt.
 
- May be freely used and exchanged. May be modified to suit your own individual
- needs and purposes. You may use this product solely at your own risk. I cannot
- be held responsible for any damages occurring due to your using this product.
- You may not lease, rent or sell this product to any other party. Have fun.
+³Open Source product with its ISC license contained in the LICENSE file.
+³Source Code at http://home.hccnet.nl/w.m.brul/usbprobe/usbecd22s.zip
 
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                      ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
 ³ Source Code Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbecd.doc ³
