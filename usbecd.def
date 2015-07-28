@@ -1,5 +1,5 @@
 library USBECD
-description '@#W.M.Brul:22.20150518#@USB 2.0 Extended Control Driver'
+description '@#W.M.Brul:23.20150727#@USB 2.0 Extended Control Driver'
 protmode
 segments '_DATA' class 'DATA'
 segments '_TEXT' class 'CODE'

@@ -1,8 +1,8 @@
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD22S.ZIP ³
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD23S.ZIP ³
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
-³Provides a usb filter device driver to directly control usb devices attached
+³Provides a classless device driver to directly control usb devices attached
  to an OS/2 system. Has been specifically designed to ease the development and
  test of simple homemade usb devices under OS/2. Uses standard/vendor control
  transfers and data (bulk/interrupt) transfers. The hybrid control interface
@@ -13,8 +13,8 @@
  Contains 3 test applications written in Borland Turbo Assembler for OS/2.
  Contains 2 documentation files: usbecd.doc (this file) and usbecd.txt.
 
-³Open Source product with its ISC license contained in the LICENSE file.
-³Source Code at http://home.hccnet.nl/w.m.brul/usbprobe/usbecd22s.zip
+ Open Source product with its ISC license contained in the LICENSE file.
+³Source Code at http://home.hccnet.nl/w.m.brul/usbprobe/usbecd23s.zip
 
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                                      ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
 ³ Source Code Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ usbecd.doc ³

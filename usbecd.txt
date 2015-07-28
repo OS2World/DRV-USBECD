@@ -1,15 +1,15 @@
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD22.ZIP ³
+³ USB 2.0 Extended Control Driver for OS/2 ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´ USBECD23.ZIP ³
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
-³Provides a usb filter device driver to directly control usb devices attached
+³Provides a classless device driver to directly control usb devices attached
  to an OS/2 system. Has been specifically designed to ease the development and
  test of simple homemade usb devices under OS/2. Uses standard/vendor control
  transfers and data (bulk/interrupt) transfers. The hybrid control interface
  supports isochronous transfers with 1 endpoint. Made in Holland by Wim Brul.
 
-³Open Source product with its ISC license contained in the LICENSE file.
-³Source Code at http://home.hccnet.nl/w.m.brul/usbprobe/usbecd22s.zip
+ Open Source product with its ISC license contained in the LICENSE file.
+³Source Code at http://home.hccnet.nl/w.m.brul/usbprobe/usbecd23s.zip
 
 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
 ³ Description ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
@@ -30,7 +30,7 @@
 ³ Installation ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
- Move the USBECD22.ZIP file into a directory of your choice and unzip it.
+ Move the USBECD23.ZIP file into a directory of your choice and unzip it.
  Copy the USBECD.SYS file to your C:\OS2\BOOT\ directory. Add the device
  driver to the CONFIG.SYS file with the DEVICE=C:\OS2\BOOT\USBECD.SYS
  statement and restart your system. Attach the usb device that you want to
